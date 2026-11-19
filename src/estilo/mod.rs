@@ -24,7 +24,7 @@ use crate::css::{self, HojaDeEstilos, Selector};
 use crate::html::dom::{Documento, NodoId, TipoNodo};
 use cascada::{Candidata, Origen};
 use computar::Calculado;
-// El layout (fase 5) usará también `Alineacion`, `Lados` y `Longitud`.
+// `Alineacion` la usará el layout en línea (fase 8).
 #[allow(unused_imports)]
 pub use tipos::{Alineacion, Display, Estilo, Lados, Longitud, NodoEstilado};
 

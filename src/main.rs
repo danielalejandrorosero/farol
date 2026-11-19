@@ -22,6 +22,8 @@ const USO: &str = "Uso:
   farol --estilo <archivo> [selector]
                              imprime el árbol estilado de una página HTML; con un selector,
                              qué declaraciones pelean en cada elemento y cuál gana
+  farol --layout <archivo> [ancho]
+                             imprime el árbol de cajas con posición y tamaño (ancho 800)
   farol --fuente             abre la ventana con la demostración de la fuente";
 
 fn main() {
@@ -32,6 +34,8 @@ fn main() {
         ["--dom", ruta] => imprimir_dom(ruta),
         ["--css", ruta] => imprimir_css(ruta),
         ["--estilo", ruta, resto @ ..] if resto.len() <= 1 => imprimir_estilo(ruta, resto.first()),
+        ["--layout", ruta] => imprimir_layout(ruta, "800"),
+        ["--layout", ruta, ancho] => imprimir_layout(ruta, ancho),
         _ => {
             eprintln!("{USO}");
             exit(2);
@@ -96,6 +100,23 @@ fn imprimir_estilo(ruta: &str, selector: Option<&&str>) {
             exit(2);
         }
     }
+}
+
+fn imprimir_layout(ruta: &str, ancho: &str) {
+    let Ok(ancho) = ancho.parse::<f32>() else {
+        eprintln!("El ancho debe ser un número de pixeles, no `{ancho}`.");
+        exit(2);
+    };
+    let bytes = match std::fs::read(ruta) {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            eprintln!("No se pudo leer {ruta}: {error}");
+            exit(1);
+        }
+    };
+    let doc = html::parsear(&String::from_utf8_lossy(&bytes));
+    let estilado = estilo::estilar(&doc, &estilo::hojas_del_documento(&doc));
+    print!("{}", layout::calcular(&estilado, ancho).imprimir(&doc));
 }
 
 fn abrir_ventana(escena: fn(&mut Lienzo)) {

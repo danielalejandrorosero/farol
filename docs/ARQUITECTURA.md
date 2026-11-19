@@ -138,10 +138,27 @@ pub fn estilar(doc: &Documento, hojas_autor: &[HojaDeEstilos]) -> NodoEstilado
 ```rust
 pub struct Rect { pub x: f32, pub y: f32, pub ancho: f32, pub alto: f32 }
 pub struct Dimensiones { pub contenido: Rect, pub relleno: Lados<f32>, pub borde: Lados<f32>, pub margen: Lados<f32> }
-pub struct Caja<'a> { pub tipo: TipoCaja, pub estilo: &'a Estilo, pub dimensiones: Dimensiones, pub hijos: Vec<Caja<'a>> }
+impl Dimensiones { pub fn caja_relleno(&self) -> Rect; pub fn caja_borde(&self) -> Rect; pub fn caja_margen(&self) -> Rect }
+pub enum TipoCaja<'a> { Bloque(NodoId), Anonima(Vec<&'a NodoEstilado>) }
+pub struct Caja<'a> { pub tipo: TipoCaja<'a>, pub estilo: Cow<'a, Estilo>, pub dimensiones: Dimensiones, pub hijos: Vec<Caja<'a>> }
 pub fn calcular<'a>(raiz: &'a NodoEstilado, ancho_ventana: f32) -> Caja<'a>
 ```
-- Fase 5: el contenido en línea se envuelve en cajas anónimas con un alto provisional.
+- Implementado así en la fase 5. Ajustes al contrato, con su motivo:
+  - `TipoCaja::Bloque` lleva el `NodoId` (para saber la etiqueta al imprimir o depurar) y
+    `TipoCaja::Anonima` lleva los nodos en línea que envuelve, tal cual: es la entrada de la fase 8.
+  - `estilo` es `Cow<'a, Estilo>` (prestado *o* propio; se lee igual que una referencia). Las
+    cajas de bloque prestan el estilo de su nodo; las anónimas no tienen nodo y llevan uno propio:
+    lo heredable del padre (letra, alto de línea, alineación) y lo demás inicial (sin fondo, ni
+    bordes, ni márgenes), para que el pintado no repita el fondo del padre.
+  - Agregados: `Rect::expandido(&Lados<f32>)` y `Caja::imprimir(&doc)` (lo que usa `--layout`).
+- `contenido` es el rectángulo de contenido en coordenadas de página (0, 0 = esquina de arriba a la
+  izquierda de la página; y crece hacia abajo). La raíz es la caja de `#documento`, en (0, 0), con
+  el ancho de la ventana y el alto de toda la página.
+- Todos los `%` y `auto` ya están resueltos a px en `Dimensiones`.
+- Sin colapso de márgenes (decisión 5.1): entre hermanos queda la suma de los dos márgenes.
+- Un elemento en línea que tiene un bloque adentro se trata entero como bloque.
+- Fase 5: el contenido en línea se envuelve en cajas anónimas con un alto provisional
+  (líneas estimadas × `alto_linea`); las anónimas no tienen hijos.
 - Fase 8: las cajas anónimas guardan líneas con fragmentos de texto posicionados (x, y, ancho,
   alto, texto, estilo), medidos con `pintado::fuente`.
 
@@ -170,6 +187,17 @@ impl Lienzo { pub fn texto(&mut self, x: f32, y: f32, texto: &str, tam: f32, col
 - `farol --dom <html>` (fase 2), `farol --css <css>` (3), `farol --estilo <html> [selector]` (4),
   `farol --layout <html> [ancho]` (5), `farol --render <html> <salida.bmp> [ancho alto]` (6),
   `farol <html>` abre la página en la ventana (6), `farol --fuente` muestra la fuente (7).
+
+## Por dentro de `layout`
+
+- `arbol.rs`: del árbol estilado al árbol de cajas. Una caja por bloque; las corridas de
+  contenido en línea entre bloques se envuelven en cajas anónimas (salvo que sean solo espacios).
+- `bloque.rs`: el modelo de caja. El ancho baja del padre (CSS 2.1 §10.3.3: las siete medidas
+  horizontales suman el ancho del contenedor; `auto`, centrado con márgenes `auto`, `max-width`,
+  `%`); la posición apila cada hijo debajo del anterior; el alto sube de los hijos.
+- `en_linea.rs`: alto provisional de las cajas anónimas (ancho del texto en una línea / ancho
+  disponible, hacia arriba, × alto de línea). La fase 8 lo reemplaza por el layout en línea real.
+- `tipos.rs`: los tipos del contrato. `imprimir.rs`: el texto de `farol --layout`.
 
 ## Por dentro de `pintado`
 
