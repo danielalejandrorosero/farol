@@ -1,6 +1,6 @@
 # Estado de las fases
 
-Fase actual: **6**
+Fase actual: **8**
 
 | Fase | Nombre | Estado | Hito |
 |---|---|---|---|
