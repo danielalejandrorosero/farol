@@ -21,12 +21,14 @@ const USO: &str = "Uso:
   farol --css <archivo>      imprime las reglas de una hoja de estilos CSS
   farol --estilo <archivo> [selector]
                              imprime el árbol estilado de una página HTML; con un selector,
-                             qué declaraciones pelean en cada elemento y cuál gana";
+                             qué declaraciones pelean en cada elemento y cuál gana
+  farol --fuente             abre la ventana con la demostración de la fuente";
 
 fn main() {
     let argumentos: Vec<String> = std::env::args().skip(1).collect();
     match argumentos.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
-        [] => abrir_ventana(),
+        [] => abrir_ventana(escena_de_prueba),
+        ["--fuente"] => abrir_ventana(pintado::fuente::demostracion::escena),
         ["--dom", ruta] => imprimir_dom(ruta),
         ["--css", ruta] => imprimir_css(ruta),
         ["--estilo", ruta, resto @ ..] if resto.len() <= 1 => imprimir_estilo(ruta, resto.first()),
@@ -96,9 +98,9 @@ fn imprimir_estilo(ruta: &str, selector: Option<&&str>) {
     }
 }
 
-fn abrir_ventana() {
+fn abrir_ventana(escena: fn(&mut Lienzo)) {
     println!("{NOMBRE} {VERSION}");
-    if let Err(error) = ui::abrir(&format!("{NOMBRE} {VERSION}"), escena_de_prueba) {
+    if let Err(error) = ui::abrir(&format!("{NOMBRE} {VERSION}"), escena) {
         eprintln!("Farol no pudo abrir la ventana: {error}");
         exit(1);
     }

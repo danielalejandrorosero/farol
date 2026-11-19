@@ -140,6 +140,12 @@ abrir la ventana. Los contratos entre módulos están en `docs/ARQUITECTURA.md`.
 | 4 | Sin `:link` ni `[hidden]` en la hoja por defecto (no hay esos selectores): todo `<a>` es azul y subrayado, tenga o no `href`; `<p hidden>` se ve | Un `<a name="x">` sale azul | Si una página real se ve mal por esto |
 | 4 | `line-height: normal` es siempre 1.2 × el tamaño de letra, sin mirar la fuente | Diferencias de 1 o 2 px por línea con Chrome | Fase 7 |
 | 4 | Sin `font-family` ni `white-space`: `pre` y `code` no usan letra monoespaciada ni respetan saltos de línea | Un `<pre>` se ve como un párrafo | Fase 8 (`white-space`) |
+| 7 | Sin suavizado (anti-aliasing): cada pixel está encendido o apagado | Bordes en escalera, más visibles a 24 px o más y en cursiva | Si el texto grande molesta; se puede suavizar al escalar |
+| 7 | Una sola fuente: `font-family` se ignora; serif, sans y monoespaciada se ven iguales | `<code>` y `<pre>` no se ven monoespaciados | Fase 8 o después, si una página lo necesita |
+| 7 | Sin kerning ni ligaduras: el espacio entre letras es siempre 1 columna | Pares como "AV" o "To" quedan algo separados | Si se nota en páginas reales |
+| 7 | La fuente está dibujada para 16 px; otros tamaños se agrandan o achican por vecino más cercano | A 12 px o menos algunas letras se apelmazan (la ñ, la m); a 24 px los trazos tienen 1,5 px y se ven desparejos | Si el texto chico de las páginas cuesta leerse: dibujar una segunda versión para tamaños chicos |
+| 7 | Cobertura: ASCII, español y algunos signos tipográficos; el resto sale como "tofu" (un rectángulo hueco) | Letras como ç, à, ß, € o cualquier alfabeto no latino se ven como rectángulos | Cuando aparezcan en una página de prueba |
+| 7 | Negrita y cursiva son sintéticas (doble trazo, inclinación) | Se ven menos finas que una negrita o cursiva diseñadas | No está previsto |
 
 ## Plantilla
 

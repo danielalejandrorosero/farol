@@ -152,15 +152,31 @@ pub fn lista_de_pintado(raiz: &Caja) -> Vec<Orden>
 impl Lienzo { pub fn ejecutar(&mut self, ordenes: &[Orden]) }
 // fase 7, en pintado::fuente:
 pub fn ancho_texto(texto: &str, tam: f32, negrita: bool) -> f32
-pub fn alto_linea_natural(tam: f32) -> f32
+pub fn alto_linea_natural(tam: f32) -> f32          // 1,25 × tam
+pub fn linea_base(tam: f32) -> f32                  // tope de la caja de línea → línea base
+pub fn ascendente(tam: f32) -> f32                  // tope de la celda → línea base (13/16 × tam)
+pub fn descendente(tam: f32) -> f32                 // línea base → fondo de la celda (3/16 × tam)
+pub fn tiene_glifo(c: char) -> bool
 impl Lienzo { pub fn texto(&mut self, x: f32, y: f32, texto: &str, tam: f32, color: u32, negrita: bool, cursiva: bool) }
 ```
+- `y` es el **tope de la caja de línea** (de alto `alto_linea_natural(tam)`), no la línea base.
+  Con otro `line-height`, el layout corre `y` la mitad de la diferencia.
+- `tam` es el `font-size` en px: la celda de 16 filas mide `tam` de alto (a 16 px, un cuadrito
+  del dibujo = un pixel). Los glifos están dibujados en `src/pintado/fuente/glifos.txt`.
 - `Lienzo` sigue trabajando con `u32` `0x00RRGGBB`; la conversión desde `css::Color` (y la
   mezcla alfa) se hace en `pintado`.
 
 ### Línea de comandos
 - `farol --dom <html>` (fase 2), `farol --css <css>` (3), `farol --estilo <html> [selector]` (4),
   `farol --layout <html> [ancho]` (5), `farol --render <html> <salida.bmp> [ancho alto]` (6),
-  `farol <html>` abre la página en la ventana (6).
+  `farol <html>` abre la página en la ventana (6), `farol --fuente` muestra la fuente (7).
+
+## Por dentro de `pintado`
+
+- `mod.rs`: el `Lienzo` (la lista de pixeles) y los rectángulos.
+- `fuente/glifos.txt`: los dibujos de cada letra, a mano, con `#` y `.` (decisión 7.1).
+- `fuente/mod.rs`: lee esos dibujos una sola vez, arma las letras con tilde, mide texto y lo
+  escribe en el lienzo a cualquier tamaño.
+- `fuente/demostracion.rs`: la escena de `farol --fuente`.
 
 Este documento se actualiza cuando una decisión cambia la forma de un módulo.
