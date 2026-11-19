@@ -33,4 +33,83 @@ URL → red → bytes → parsers → estilos → layout → display list → pi
   tolerancia (decisión 2.1).
 - `dom.rs`: la arena (decisión 2.2). `NodoId` es la posición de un nodo en la lista.
 
+## Contratos entre módulos (fases 3 a 8)
+
+Escritos antes de construir, para que cada fase encaje con las demás. Los nombres pueden
+ajustarse si hay una buena razón, pero la forma (quién recibe qué) se respeta. Si un contrato
+cambia, se actualiza aquí.
+
+### `css` (fase 3)
+```rust
+pub struct Color { pub r: u8, pub g: u8, pub b: u8, pub a: u8 }      // a = 255 es opaco
+pub enum Unidad { Px, Em, Porcentaje }
+pub enum Valor { Palabra(String), Longitud(f32, Unidad), Numero(f32), Color(Color) }
+pub struct Declaracion { pub propiedad: String, pub valor: Valor, pub importante: bool }
+pub struct SelectorSimple { pub etiqueta: Option<String>, pub id: Option<String>, pub clases: Vec<String> }
+pub struct Selector { pub cadena: Vec<SelectorSimple> }   // combinador descendiente, izq. a der.
+impl Selector { pub fn especificidad(&self) -> (u32, u32, u32) }  // (ids, clases, etiquetas)
+pub struct Regla { pub selectores: Vec<Selector>, pub declaraciones: Vec<Declaracion> }
+pub struct HojaDeEstilos { pub reglas: Vec<Regla> }
+pub fn parsear(css: &str) -> HojaDeEstilos
+pub fn parsear_declaraciones(texto: &str) -> Vec<Declaracion>   // para el atributo style=""
+```
+- Las abreviadas se expanden al parsear: `margin`, `padding` → `-top/-right/-bottom/-left`;
+  `border`, `border-width/-color/-style`, `border-top`… → `border-{lado}-{width,color,style}`;
+  `background: <color>` → `background-color`.
+- Selectores no soportados (`>`, `+`, `~`, `:hover`, `[attr]`, `::before`) descartan la regla
+  entera. Los bloques `@media`, `@font-face`, etc. se saltan completos.
+
+### `estilo` (fase 4)
+```rust
+pub enum Display { Bloque, EnLinea, Ninguno }
+pub enum Longitud { Auto, Px(f32), Porcentaje(f32) }
+pub enum Alineacion { Izquierda, Centro, Derecha }
+pub struct Lados<T> { pub arriba: T, pub derecha: T, pub abajo: T, pub izquierda: T }
+pub struct Estilo {
+    pub display: Display,
+    pub color: Color, pub fondo: Color,                    // css::Color
+    pub ancho: Longitud, pub alto: Longitud, pub ancho_maximo: Longitud,
+    pub margen: Lados<Longitud>, pub relleno: Lados<Longitud>,
+    pub borde_ancho: Lados<f32>, pub borde_color: Lados<Color>,
+    pub tam_fuente: f32, pub negrita: bool, pub cursiva: bool, pub subrayado: bool,
+    pub alineacion: Alineacion, pub alto_linea: f32,       // en px ya resueltos
+}
+pub struct NodoEstilado { pub nodo: NodoId, pub texto: Option<String>, pub estilo: Estilo, pub hijos: Vec<NodoEstilado> }
+pub fn hojas_del_documento(doc: &Documento) -> Vec<HojaDeEstilos>   // contenido de los <style>
+pub fn estilar(doc: &Documento, hojas_autor: &[HojaDeEstilos]) -> NodoEstilado
+```
+- Hoja por defecto del navegador en `src/estilo/por_defecto.css`, cargada con `include_str!`.
+- `em` se resuelve a px aquí. Los `%` se quedan como `Porcentaje` para que los resuelva el layout.
+- Un borde sin `border-style` (o `none`) tiene ancho 0, como en CSS.
+- Los nodos con `display: none` y sus hijos no aparecen en el árbol.
+
+### `layout` (fases 5 y 8)
+```rust
+pub struct Rect { pub x: f32, pub y: f32, pub ancho: f32, pub alto: f32 }
+pub struct Dimensiones { pub contenido: Rect, pub relleno: Lados<f32>, pub borde: Lados<f32>, pub margen: Lados<f32> }
+pub struct Caja<'a> { pub tipo: TipoCaja, pub estilo: &'a Estilo, pub dimensiones: Dimensiones, pub hijos: Vec<Caja<'a>> }
+pub fn calcular<'a>(raiz: &'a NodoEstilado, ancho_ventana: f32) -> Caja<'a>
+```
+- Fase 5: el contenido en línea se envuelve en cajas anónimas con un alto provisional.
+- Fase 8: las cajas anónimas guardan líneas con fragmentos de texto posicionados (x, y, ancho,
+  alto, texto, estilo), medidos con `pintado::fuente`.
+
+### `pintado` (fases 6 y 7)
+```rust
+pub enum Orden { Rectangulo { rect: Rect, color: Color }, Texto { /* fase 8 */ } }
+pub fn lista_de_pintado(raiz: &Caja) -> Vec<Orden>
+impl Lienzo { pub fn ejecutar(&mut self, ordenes: &[Orden]) }
+// fase 7, en pintado::fuente:
+pub fn ancho_texto(texto: &str, tam: f32, negrita: bool) -> f32
+pub fn alto_linea_natural(tam: f32) -> f32
+impl Lienzo { pub fn texto(&mut self, x: f32, y: f32, texto: &str, tam: f32, color: u32, negrita: bool, cursiva: bool) }
+```
+- `Lienzo` sigue trabajando con `u32` `0x00RRGGBB`; la conversión desde `css::Color` (y la
+  mezcla alfa) se hace en `pintado`.
+
+### Línea de comandos
+- `farol --dom <html>` (fase 2), `farol --css <css>` (3), `farol --estilo <html>` (4),
+  `farol --layout <html> [ancho]` (5), `farol --render <html> <salida.bmp> [ancho alto]` (6),
+  `farol <html>` abre la página en la ventana (6).
+
 Este documento se actualiza cuando una decisión cambia la forma de un módulo.

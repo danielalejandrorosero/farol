@@ -19,6 +19,14 @@ la confirme) · **Pendiente**.
 | 0.4 | Organización del código | Un solo crate con un módulo por etapa | Provisional | 2026-11-18 |
 | 2.1 | Tolerancia del parser de HTML | Tolerante simple | Decidida (delegada a Claude) | 2026-11-18 |
 | 2.2 | Cómo se guarda el DOM en memoria | Arena con índices | Decidida (delegada a Claude) | 2026-11-18 |
+| 3.1 | Subconjunto de CSS inicial | Medio | Decidida (delegada a Claude) | 2026-11-18 |
+| 4.1 | Cómo se emparejan reglas con nodos | Ingenuo: cada regla contra cada nodo | Decidida (delegada a Claude) | 2026-11-18 |
+| 5.1 | Colapso de márgenes | No, por ahora (deuda) | Decidida (delegada a Claude) | 2026-11-18 |
+| 5.2 | Cómo se verifica el layout | Pruebas automáticas del árbol de cajas + render a imagen | Decidida (delegada a Claude) | 2026-11-18 |
+| 6.1 | Transparencia | Opaco, con mezcla alfa simple para colores `rgba` | Decidida (delegada a Claude) | 2026-11-18 |
+| 6.2 | Cómo se ve el resultado sin abrir la ventana | `farol --render` escribe un BMP con un escritor propio | Decidida (delegada a Claude) | 2026-11-18 |
+| 7.1 | De dónde salen las letras | Fuente de mapa de bits propia, escalable | Decidida (delegada a Claude) | 2026-11-18 |
+| 8.1 | Cómo se parten las líneas | Voraz | Decidida (delegada a Claude) | 2026-11-18 |
 | 9.1 | Resolución DNS | Cliente DNS propio sobre UDP | Decidida | 2026-11-18 |
 | 9.4 | Inspección de tráfico | Wireshark, con captura guardada como evidencia del hito | Decidida | 2026-11-18 |
 | 12.1 | HTTPS | Ambos: librería TLS por defecto y TLS 1.3 propio experimental | Decidida | 2026-11-18 |
@@ -86,6 +94,13 @@ la confirme) · **Pendiente**.
 - **Motivo:** todos los nodos en una lista y cada uno apunta a su padre e hijos por posición, como
   `padre_id` en una tabla SQL. Rápido y sin peleas con el compilador. Es lo que usa Servo.
 - **Delegada:** el arquitecto le pidió a Claude elegir.
+
+### 3.1 a 8.1 — Delegadas en bloque
+El 2026-11-18 el arquitecto pidió que las fases 3 a 8 las construyeran agentes y que Claude
+eligiera. Se tomaron las recomendaciones de la guía: CSS medio, emparejamiento ingenuo, sin
+colapso de márgenes, colores opacos con alfa simple, fuente de mapa de bits propia y partición de
+líneas voraz. Se agregó 6.2 (render a BMP) para que los agentes puedan verificar visualmente sin
+abrir la ventana. Los contratos entre módulos están en `docs/ARQUITECTURA.md`.
 
 ### 9.1 — Cliente DNS propio
 - **Opciones:** resolvedor del sistema operativo o cliente propio sobre UDP.
