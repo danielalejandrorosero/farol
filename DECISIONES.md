@@ -17,6 +17,8 @@ la confirme) · **Pendiente**.
 | 1.2 | Con qué se pintan los pixeles | CPU | Decidida | 2026-11-18 |
 | 0.3 | Toolchain de Rust en Windows | GNU (`x86_64-pc-windows-gnu`) | Provisional | 2026-11-18 |
 | 0.4 | Organización del código | Un solo crate con un módulo por etapa | Provisional | 2026-11-18 |
+| 2.1 | Tolerancia del parser de HTML | Tolerante simple | Decidida (delegada a Claude) | 2026-11-18 |
+| 2.2 | Cómo se guarda el DOM en memoria | Arena con índices | Decidida (delegada a Claude) | 2026-11-18 |
 | 9.1 | Resolución DNS | Cliente DNS propio sobre UDP | Decidida | 2026-11-18 |
 | 9.4 | Inspección de tráfico | Wireshark, con captura guardada como evidencia del hito | Decidida | 2026-11-18 |
 | 12.1 | HTTPS | Ambos: librería TLS por defecto y TLS 1.3 propio experimental | Decidida | 2026-11-18 |
@@ -69,6 +71,22 @@ la confirme) · **Pendiente**.
   es fácil.
 - **Estado:** recomendada por Claude y aplicada para no bloquear; falta confirmación.
 
+### 2.1 — Parser de HTML tolerante simple
+- **Opciones:** estricto, tolerante simple, o el algoritmo completo de WHATWG.
+- **Motivo:** funciona con casi todas las páginas reales sin las semanas que cuesta el algoritmo
+  oficial. Se puede endurecer después sin tocar el resto del motor.
+- **Reglas que implementa:** los elementos vacíos (`br`, `img`…) no tienen hijos; un bloque nuevo
+  cierra un `<p>` abierto; un `<li>` cierra el anterior (igual `dt`, `dd`, `tr`, `td`, `option`);
+  un cierre cierra todo lo que quedó abierto adentro; un cierre sin apertura se ignora; el final
+  del archivo cierra todo.
+- **Delegada:** el arquitecto le pidió a Claude elegir.
+
+### 2.2 — DOM en una arena con índices
+- **Opciones:** arena con índices, punteros compartidos (`Rc<RefCell>`), o árbol solo hacia abajo.
+- **Motivo:** todos los nodos en una lista y cada uno apunta a su padre e hijos por posición, como
+  `padre_id` en una tabla SQL. Rápido y sin peleas con el compilador. Es lo que usa Servo.
+- **Delegada:** el arquitecto le pidió a Claude elegir.
+
 ### 9.1 — Cliente DNS propio
 - **Opciones:** resolvedor del sistema operativo o cliente propio sobre UDP.
 - **Motivo:** el arquitecto quiere ver las redes por dentro; el paquete se arma byte a byte.
@@ -88,7 +106,11 @@ la confirme) · **Pendiente**.
 
 ## Deuda aceptada
 
-Nada todavía.
+| Fase | Qué falta | Efecto visible | Cuándo retomarlo |
+|---|---|---|---|
+| 2 | Algoritmo de "adopción" de WHATWG para etiquetas cruzadas (`<b><i></b></i>`) | En `<b>x <i>y</b> z</i>`, la "z" no sale en cursiva; en Chrome sí | Si una página real se ve mal por esto |
+| 2 | No se crean `<html>`, `<head>` y `<body>` cuando faltan | Una página sin esas etiquetas tiene un árbol con otra forma que en Chrome | Fase 4, si los estilos por defecto lo necesitan |
+| 2 | Solo se traducen unas pocas entidades con nombre (`&amp;`, `&lt;`, `&ntilde;`…) más todas las numéricas | `&eacute;` se muestra tal cual | Cuando aparezca en una página de prueba |
 
 ## Plantilla
 

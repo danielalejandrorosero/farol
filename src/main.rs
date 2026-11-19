@@ -9,16 +9,46 @@ mod red;
 mod ui;
 
 use pintado::Lienzo;
+use std::process::exit;
 
 /// Nombre y versión, leídos de `Cargo.toml` al compilar.
 const NOMBRE: &str = "Farol";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+const USO: &str = "Uso:
+  farol                      abre la ventana
+  farol --dom <archivo>      imprime el árbol DOM de una página HTML";
+
 fn main() {
+    let argumentos: Vec<String> = std::env::args().skip(1).collect();
+    match argumentos.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
+        [] => abrir_ventana(),
+        ["--dom", ruta] => imprimir_dom(ruta),
+        _ => {
+            eprintln!("{USO}");
+            exit(2);
+        }
+    }
+}
+
+fn imprimir_dom(ruta: &str) {
+    let bytes = match std::fs::read(ruta) {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            eprintln!("No se pudo leer {ruta}: {error}");
+            exit(1);
+        }
+    };
+    // Si el archivo trae bytes que no son UTF-8 válido, se reemplazan por � en vez de fallar.
+    let texto = String::from_utf8_lossy(&bytes);
+    print!("{}", html::parsear(&texto).imprimir());
+}
+
+fn abrir_ventana() {
     println!("{NOMBRE} {VERSION}");
     if let Err(error) = ui::abrir(&format!("{NOMBRE} {VERSION}"), escena_de_prueba) {
         eprintln!("Farol no pudo abrir la ventana: {error}");
-        std::process::exit(1);
+        exit(1);
     }
 }
 

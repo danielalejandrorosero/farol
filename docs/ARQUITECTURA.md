@@ -25,4 +25,12 @@ URL → red → bytes → parsers → estilos → layout → display list → pi
 - `red` no sabe nada de HTML; solo entrega bytes y cabeceras.
 - `ui` es el único módulo que conoce la ventana del sistema operativo.
 
+## Por dentro de `html`
+
+- `tokenizador.rs`: recorre el texto carácter por carácter y lo corta en tokens (abre, cierra,
+  texto, comentario). El contenido de `style`, `script`, `title` y `textarea` se toma crudo.
+- `constructor.rs`: arma el árbol con una pila de elementos abiertos y aplica las reglas de
+  tolerancia (decisión 2.1).
+- `dom.rs`: la arena (decisión 2.2). `NodoId` es la posición de un nodo en la lista.
+
 Este documento se actualiza cuando una decisión cambia la forma de un módulo.
