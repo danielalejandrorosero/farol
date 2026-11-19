@@ -14,7 +14,7 @@ la confirme) · **Pendiente**.
 | 0.1 | Lenguaje del motor | Rust | Decidida | 2026-11-18 |
 | 0.2 | Política de dependencias | Mínimas y declaradas | Decidida | 2026-11-18 |
 | 1.1 | Cómo se obtiene la ventana | `winit` + `softbuffer` | Decidida | 2026-11-18 |
-| 1.2 | Con qué se pintan los pixeles | CPU | Decidida (consecuencia de 1.1) | 2026-11-18 |
+| 1.2 | Con qué se pintan los pixeles | CPU | Decidida | 2026-11-18 |
 | 0.3 | Toolchain de Rust en Windows | GNU (`x86_64-pc-windows-gnu`) | Provisional | 2026-11-18 |
 | 0.4 | Organización del código | Un solo crate con un módulo por etapa | Provisional | 2026-11-18 |
 | 9.1 | Resolución DNS | Cliente DNS propio sobre UDP | Decidida | 2026-11-18 |
@@ -47,8 +47,11 @@ la confirme) · **Pendiente**.
 
 ### 1.2 — Pintado por CPU
 - **Opciones:** CPU o GPU.
-- **Motivo:** se desprende de 1.1: `softbuffer` es un búfer de pixeles en memoria. La GPU queda
-  como extra.
+- **Motivo:** con CPU se ve cómo cada caja se convierte en pixeles; con GPU eso pasa dentro de la
+  tarjeta. La velocidad del CPU sobra para cajas y texto. La GPU queda como extra: la display list
+  permite cambiar de pintor sin tocar el resto.
+- **Historia:** Claude la aplicó primero como consecuencia de 1.1 sin confirmación; el arquitecto
+  la confirmó después de ver las dos opciones.
 
 ### 0.3 — Toolchain GNU (provisional)
 - **Opciones:** MSVC (requiere instalar Visual Studio Build Tools, varios GB y permisos de
