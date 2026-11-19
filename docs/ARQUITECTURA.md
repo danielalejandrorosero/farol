@@ -33,6 +33,17 @@ URL → red → bytes → parsers → estilos → layout → display list → pi
   tolerancia (decisión 2.1).
 - `dom.rs`: la arena (decisión 2.2). `NodoId` es la posición de un nodo en la lista.
 
+## Por dentro de `css`
+
+- `tokenizador.rs`: corta el texto en tokens (identificadores, números con unidad, `#hash`,
+  cadenas, funciones, `!important`, símbolos y espacios). Los comentarios desaparecen aquí.
+- `parser.rs`: arma las reglas y hace la recuperación de errores (salta hasta `;` o hasta la `}`
+  balanceada). Anota cada cosa descartada como aviso.
+- `selectores.rs`: etiqueta, clase, id, `*` y combinador descendiente.
+- `valores.rs`: interpreta valores y colores, con una validación ligera por tipo de propiedad.
+- `abreviadas.rs`: expande `margin`, `padding`, `border*` y `background`.
+- `tipos.rs`: los tipos del contrato.
+
 ## Contratos entre módulos (fases 3 a 8)
 
 Escritos antes de construir, para que cada fase encaje con las demás. Los nombres pueden
@@ -52,10 +63,26 @@ pub struct Regla { pub selectores: Vec<Selector>, pub declaraciones: Vec<Declara
 pub struct HojaDeEstilos { pub reglas: Vec<Regla> }
 pub fn parsear(css: &str) -> HojaDeEstilos
 pub fn parsear_declaraciones(texto: &str) -> Vec<Declaracion>   // para el atributo style=""
+pub fn parsear_con_avisos(css: &str) -> (HojaDeEstilos, Vec<String>)  // lo que usa `--css`
 ```
+- Implementado así en la fase 3. Agregados al contrato: `parsear_con_avisos` y `Color::rgb`;
+  `HojaDeEstilos::imprimir()` y `Display` para todos los tipos.
+- Las propiedades y palabras clave llegan en minúsculas; clases e ids, tal como se escribieron.
+- `Valor::Palabra` guarda las palabras clave y, en propiedades que Farol no interpreta, el valor
+  completo como texto (`font-family` → `"Helvetica Neue", Arial, sans-serif`).
+- `0` sin unidad en una propiedad de longitud llega como `Longitud(0, Px)`; en las demás
+  (`line-height: 0`) como `Numero(0)`. `pt`, `pc`, `in`, `cm`, `mm` llegan ya convertidas a px.
+  `rem`, `vh`, `vw` y similares no son válidas todavía: la declaración se descarta.
+- Validación ligera: las propiedades de color solo aceptan colores, `currentcolor` y las globales
+  (`inherit`, `initial`, `unset`); las de longitud, longitudes o palabras; `width`, `height`,
+  `padding-*`, `font-size` no aceptan negativos. Un valor inválido descarta la declaración.
 - Las abreviadas se expanden al parsear: `margin`, `padding` → `-top/-right/-bottom/-left`;
   `border`, `border-width/-color/-style`, `border-top`… → `border-{lado}-{width,color,style}`;
   `background: <color>` → `background-color`.
+- Como en CSS, lo que una abreviada no menciona vuelve a su valor inicial: `border: 1px solid`
+  emite también `border-*-color: currentcolor`; sin ancho emite `medium`, sin estilo `none`.
+  `background` sin color emite `background-color: transparent`. La fase 4 debe entender
+  `medium` (3px), `thin` (1px), `thick` (5px) y `currentcolor` (el `color` del elemento).
 - Selectores no soportados (`>`, `+`, `~`, `:hover`, `[attr]`, `::before`) descartan la regla
   entera. Los bloques `@media`, `@font-face`, etc. se saltan completos.
 

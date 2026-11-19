@@ -7,7 +7,7 @@ Fase actual: **3**
 | 0 | Entorno y esqueleto | Cerrada | `cargo run` imprime nombre y versión; primer commit |
 | 1 | Ventana y pixeles | Cerrada | Ventana con rectángulos de colores que se redibuja al redimensionar |
 | 2 | Parser de HTML | Cerrada | `--dom pagina.html` imprime el árbol con sangría |
-| 3 | Parser de CSS | Siguiente | `--css estilos.css` imprime las reglas; un CSS roto no lo tumba |
+| 3 | Parser de CSS | Cerrada | `--css estilos.css` imprime las reglas; un CSS roto no lo tumba |
 | 4 | Motor de estilos | Pendiente | Propiedades finales de cualquier nodo y qué regla ganó |
 | 5 | Layout de bloques | Pendiente | Árbol de cajas con coordenadas que coinciden con Chrome |
 | 6 | Pintado y display list | Pendiente | Primera página HTML con CSS dibujada por el motor |

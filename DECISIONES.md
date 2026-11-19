@@ -126,6 +126,12 @@ abrir la ventana. Los contratos entre módulos están en `docs/ARQUITECTURA.md`.
 | 2 | Algoritmo de "adopción" de WHATWG para etiquetas cruzadas (`<b><i></b></i>`) | En `<b>x <i>y</b> z</i>`, la "z" no sale en cursiva; en Chrome sí | Si una página real se ve mal por esto |
 | 2 | No se crean `<html>`, `<head>` y `<body>` cuando faltan | Una página sin esas etiquetas tiene un árbol con otra forma que en Chrome | Fase 4, si los estilos por defecto lo necesitan |
 | 2 | Solo se traducen unas pocas entidades con nombre (`&amp;`, `&lt;`, `&ntilde;`…) más todas las numéricas | `&eacute;` se muestra tal cual | Cuando aparezca en una página de prueba |
+| 3 | Unidades `rem`, `vh`, `vw`, `ex`, `ch` no se soportan: la declaración se descarta | `font-size: 1.2rem` se ignora y queda el tamaño heredado | Cuando una página de prueba las use (`rem` es común) |
+| 3 | La validación de valores es ligera: solo colores y longitudes. Las demás propiedades aceptan cualquier palabra (`display: banana` pasa) | Un valor inválido puede pisar a uno válido anterior, cuando en Chrome se ignoraría | Fase 4, al leer cada propiedad: tratar lo desconocido como inválido |
+| 3 | Valores de varias piezas en propiedades no interpretadas se guardan como texto (`font-family`, `text-decoration: underline red`) | Ninguno por ahora; la fase 4 debe partir el texto si los necesita | Cuando una propiedad lo requiera |
+| 3 | `background` solo conserva el color; imágenes, posiciones y varias capas se ignoran | Sin imágenes de fondo | Fase 10 (imágenes) |
+| 3 | Sin `@media`, `@import`, `@font-face` ni selectores `>`, `+`, `~`, `:pseudo`, `[atributo]` (decisión 3.1) | Esas reglas no se aplican | Si una página real se ve mal por esto |
+| 3 | Sin `var()` ni propiedades personalizadas, `calc()`, `hsl()` ni la lista completa de 148 nombres de color | Esos valores se descartan o quedan como texto | Cuando una página de prueba los use |
 
 ## Plantilla
 

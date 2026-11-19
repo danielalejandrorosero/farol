@@ -1,0 +1,62 @@
+/* CSS roto a propósito: cada bloque tiene un error distinto. Farol debe sobrevivir a todo
+   y quedarse con lo que sí se entiende. */
+
+/* 1. Declaraciones sin ":" o sin valor: solo se pierden ellas. */
+h1 {
+  color red;
+  font-size: ;
+  margin-top: 10px;
+}
+
+/* 2. Valores raros: un color que no existe, una longitud sin unidad, una unidad que Farol
+      no conoce. La declaración rota se descarta y la anterior sigue valiendo. */
+p {
+  color: blue;
+  color: banana;
+  width: 300;
+  height: 2rem;
+  padding: 1px 2px 3px 4px 5px;
+  border: 2px solid azulito;
+  line-height: 1.4;
+}
+
+/* 3. Selectores no soportados mezclados con válidos. */
+ul > li { color: red; }
+a:hover { color: red; }
+input[type="text"] { border: 1px solid; }
+p::first-line { font-weight: bold; }
+h2, h3:hover { color: red; }        /* uno malo tumba la lista entera */
+div p { color: green; }             /* este sí se entiende */
+
+/* 4. Basura entre reglas. Ojo: la basura se pega al selector de la regla que sigue y la
+      invalida, así que `.ok` también se pierde. Chrome hace exactamente lo mismo. La regla
+      de después ya no se ve afectada. */
+}}} ;;;
+.ok { display: block; ; ; }
+.ok-de-verdad { display: block; ; ; }
+
+/* 5. Llaves anidadas en una regla descartada: se salta hasta su llave balanceada. */
+a:visited { color: red; { anidado { muy { adentro } } } background: blue; }
+.despues-del-anidado { color: #123456; }
+
+/* 6. At-rules: se saltan completas, con o sin bloque. */
+@media print { body { color: black; } .x { y: z } }
+@font-face { font-family: Rara; src: url(rara.woff); }
+@import "otro.css";
+
+/* 7. Cadenas cortadas, !important mal puesto, punto y coma dentro de url(). */
+.cadena {
+  content: "no se cierra
+  ;
+  color: red !important blue;
+  background-image: url(data:image/png;base64,AAAA);
+  margin: 5px !important;
+}
+
+/* 8. Comentario en medio de todo y mayúsculas. */
+DIV/* hola */.Mayus { COLOR: ReD; Padding: 0 }
+
+/* 9. Una llave sin cerrar al final: el final del archivo cierra la regla. */
+.final {
+  color: olive;
+  margin: 1em

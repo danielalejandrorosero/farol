@@ -17,13 +17,15 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const USO: &str = "Uso:
   farol                      abre la ventana
-  farol --dom <archivo>      imprime el árbol DOM de una página HTML";
+  farol --dom <archivo>      imprime el árbol DOM de una página HTML
+  farol --css <archivo>      imprime las reglas de una hoja de estilos CSS";
 
 fn main() {
     let argumentos: Vec<String> = std::env::args().skip(1).collect();
     match argumentos.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
         [] => abrir_ventana(),
         ["--dom", ruta] => imprimir_dom(ruta),
+        ["--css", ruta] => imprimir_css(ruta),
         _ => {
             eprintln!("{USO}");
             exit(2);
@@ -42,6 +44,28 @@ fn imprimir_dom(ruta: &str) {
     // Si el archivo trae bytes que no son UTF-8 válido, se reemplazan por � en vez de fallar.
     let texto = String::from_utf8_lossy(&bytes);
     print!("{}", html::parsear(&texto).imprimir());
+}
+
+fn imprimir_css(ruta: &str) {
+    let bytes = match std::fs::read(ruta) {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            eprintln!("No se pudo leer {ruta}: {error}");
+            exit(1);
+        }
+    };
+    let (hoja, avisos) = css::parsear_con_avisos(&String::from_utf8_lossy(&bytes));
+    print!("{}", hoja.imprimir());
+    let declaraciones: usize = hoja.reglas.iter().map(|r| r.declaraciones.len()).sum();
+    println!("
+{} reglas, {declaraciones} declaraciones.", hoja.reglas.len());
+    if !avisos.is_empty() {
+        println!("
+Descartado ({}):", avisos.len());
+        for aviso in avisos {
+            println!("  - {aviso}");
+        }
+    }
 }
 
 fn abrir_ventana() {
