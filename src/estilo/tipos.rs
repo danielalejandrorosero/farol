@@ -142,8 +142,11 @@ impl Estilo {
 pub struct NodoEstilado {
     /// De qué nodo del DOM viene (para saber su etiqueta o sus atributos).
     pub nodo: NodoId,
-    /// `Some` si es un nodo de texto. Se guarda tal cual, con sus espacios (los colapsa la fase 8).
+    /// `Some` si es un nodo de texto. Se guarda tal cual, con sus espacios (los colapsa el layout en línea).
     pub texto: Option<String>,
+    /// `true` si es un `<br>`: el layout en línea (fase 8) corta la línea ahí. Es el único
+    /// elemento que el layout necesita reconocer por su etiqueta, y no tiene acceso al DOM.
+    pub salto_de_linea: bool,
     pub estilo: Estilo,
     pub hijos: Vec<NodoEstilado>,
 }

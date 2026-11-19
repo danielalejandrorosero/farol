@@ -16,7 +16,7 @@ URL → red → bytes → parsers → estilos → layout → display list → pi
 | `css` | Texto CSS | Lista de reglas | 3 |
 | `estilo` | DOM y reglas | Árbol de estilo: cada nodo con sus propiedades finales | 4 |
 | `layout` | Árbol de estilo y ancho de ventana | Árbol de cajas con posición y tamaño | 5, 8 |
-| `pintado` | Árbol de cajas | Display list y pixeles en el framebuffer | 6, 7 |
+| `pintado` | Árbol de cajas | Display list y pixeles en el framebuffer | 6, 7, 8 |
 | `ui` | Eventos de ventana, mouse y teclado | Scroll, clics, navegación | 1, 11 |
 
 ## Reglas de dependencia entre módulos
@@ -111,7 +111,7 @@ pub struct Estilo {
     pub tam_fuente: f32, pub negrita: bool, pub cursiva: bool, pub subrayado: bool,
     pub alineacion: Alineacion, pub alto_linea: f32,       // en px ya resueltos
 }
-pub struct NodoEstilado { pub nodo: NodoId, pub texto: Option<String>, pub estilo: Estilo, pub hijos: Vec<NodoEstilado> }
+pub struct NodoEstilado { pub nodo: NodoId, pub texto: Option<String>, pub salto_de_linea: bool, pub estilo: Estilo, pub hijos: Vec<NodoEstilado> }
 pub fn hojas_del_documento(doc: &Documento) -> Vec<HojaDeEstilos>   // contenido de los <style>
 pub fn estilar(doc: &Documento, hojas_autor: &[HojaDeEstilos]) -> NodoEstilado
 ```
@@ -119,6 +119,8 @@ pub fn estilar(doc: &Documento, hojas_autor: &[HojaDeEstilos]) -> NodoEstilado
   `Estilo::inicial()`, `Estilo::para_texto(&padre)`, `NodoEstilado::imprimir(&doc)` y
   `estilo::explicar(doc, hojas, selector)` (lo que usa `--estilo <html> <selector>`).
 - La raíz (`NodoEstilado` del nodo `Documento`) tiene el estilo inicial con `display: Bloque`.
+- Fase 8: `salto_de_linea` es `true` solo en los `<br>`. El layout no tiene el DOM y el `<br>` es
+  el único elemento que necesita reconocer por su etiqueta (corta el renglón).
 - Los nodos de texto llevan `texto: Some(..)`, `display: EnLinea`, las propiedades heredables del
   padre y el resto en su valor inicial (sin márgenes, relleno, bordes ni fondo). Los textos de solo
   espacios se conservan: los colapsa la fase 8.
@@ -140,7 +142,11 @@ pub struct Rect { pub x: f32, pub y: f32, pub ancho: f32, pub alto: f32 }
 pub struct Dimensiones { pub contenido: Rect, pub relleno: Lados<f32>, pub borde: Lados<f32>, pub margen: Lados<f32> }
 impl Dimensiones { pub fn caja_relleno(&self) -> Rect; pub fn caja_borde(&self) -> Rect; pub fn caja_margen(&self) -> Rect }
 pub enum TipoCaja<'a> { Bloque(NodoId), Anonima(Vec<&'a NodoEstilado>) }
-pub struct Caja<'a> { pub tipo: TipoCaja<'a>, pub estilo: Cow<'a, Estilo>, pub dimensiones: Dimensiones, pub hijos: Vec<Caja<'a>> }
+pub struct Caja<'a> { pub tipo: TipoCaja<'a>, pub estilo: Cow<'a, Estilo>, pub dimensiones: Dimensiones,
+                      pub hijos: Vec<Caja<'a>>, pub lineas: Vec<Linea<'a>> }            // lineas: fase 8
+pub struct Linea<'a> { pub rect: Rect, pub base: f32, pub fragmentos: Vec<Fragmento<'a>>, pub cajas: Vec<CajaEnLinea<'a>> }
+pub struct Fragmento<'a> { pub rect: Rect, pub texto: String, pub estilo: &'a Estilo }
+pub struct CajaEnLinea<'a> { pub rect: Rect, pub borde: Lados<f32>, pub estilo: &'a Estilo }
 pub fn calcular<'a>(raiz: &'a NodoEstilado, ancho_ventana: f32) -> Caja<'a>
 ```
 - Implementado así en la fase 5. Ajustes al contrato, con su motivo:
@@ -157,17 +163,30 @@ pub fn calcular<'a>(raiz: &'a NodoEstilado, ancho_ventana: f32) -> Caja<'a>
 - Todos los `%` y `auto` ya están resueltos a px en `Dimensiones`.
 - Sin colapso de márgenes (decisión 5.1): entre hermanos queda la suma de los dos márgenes.
 - Un elemento en línea que tiene un bloque adentro se trata entero como bloque.
-- Fase 5: el contenido en línea se envuelve en cajas anónimas con un alto provisional
-  (líneas estimadas × `alto_linea`); las anónimas no tienen hijos.
-- Fase 8: las cajas anónimas guardan líneas con fragmentos de texto posicionados (x, y, ancho,
-  alto, texto, estilo), medidos con `pintado::fuente`.
+- El contenido en línea se envuelve en cajas anónimas; las anónimas no tienen hijos.
+- Implementado así en la fase 8 (reemplaza el alto provisional de la fase 5):
+  - Cada caja anónima guarda sus renglones en `Caja::lineas` (vacío en los bloques) y su alto es
+    la suma de los altos de los renglones.
+  - `Linea::rect`: el renglón entero (x e ancho del contenido del bloque, `y`, alto). `base`: la
+    `y` de la línea base, la misma para todo lo del renglón.
+  - `Fragmento`: un pedazo de texto de un solo nodo de texto (palabras y espacios de un mismo
+    nodo se juntan). `rect.x` y `rect.ancho` son lo que avanza la pluma; `rect.y` y `rect.alto`
+    son la caja de línea *natural* de su letra, lo que recibe `Lienzo::texto`
+    (`rect.y + fuente::linea_base(tam) == base`). `estilo` es una referencia al estilo del nodo
+    de texto en el árbol estilado (no hace falta `Cow`: siempre existe allí).
+  - `CajaEnLinea`: el pedazo de un elemento en línea en un renglón, como caja de borde; `borde`
+    dice el grosor de cada lado en ese pedazo (los lados cortados por un salto de renglón valen
+    0). En orden de afuera hacia adentro. Hay una por cada elemento en línea, tenga o no fondo.
+  - Espacios colapsados como `white-space: normal`; partición voraz (decisión 8.1); alto del
+    renglón con el modelo de CSS 2.1 §10.8 simplificado (solo `vertical-align: baseline`, más el
+    "puntal" del bloque); `text-align` izquierda, centro y derecha por renglón.
 
-### `pintado` (fases 6 y 7)
+### `pintado` (fases 6, 7 y 8)
 ```rust
 pub enum Orden {
     FondoDelLienzo(css::Color),                      // siempre la primera: cubre todo el lienzo
     Rectangulo { rect: layout::Rect, color: css::Color },
-    // Texto { … }                                   // fase 8
+    Texto { x: f32, y: f32, texto: String, tam: f32, color: css::Color, negrita: bool, cursiva: bool },  // fase 8
 }
 pub fn lista_de_pintado(raiz: &Caja) -> Vec<Orden>
 impl Lienzo {
@@ -199,8 +218,13 @@ impl Lienzo { pub fn texto(&mut self, x: f32, y: f32, texto: &str, tam: f32, col
   - Orden de pintado: por cada caja, en orden del documento, su fondo (sobre `caja_relleno()`),
     sus cuatro bordes (el anillo entre `caja_borde()` y `caja_relleno()`; arriba y abajo se quedan
     con las esquinas) y después sus hijos. Lo transparente (alfa 0) o sin área no genera orden.
-  - Los elementos en línea (`span`, `a`, `b`) todavía no pintan fondo ni borde: viven dentro de
-    las cajas anónimas y no tienen rectángulo propio hasta la fase 8.
+  - Fase 8: después del fondo y los bordes de una caja (que en una anónima son invisibles) van
+    sus renglones: primero el fondo y el borde de cada `CajaEnLinea` de todos los renglones,
+    después cada fragmento como `Orden::Texto` (con `y` = `Fragmento::rect.y`, el tope de la caja
+    de línea natural) seguido, si está subrayado, de un `Orden::Rectangulo` de `max(1, tam/16)`
+    px de alto, un cuadrito debajo de la línea base, del ancho del fragmento y en su color.
+  - `Orden::Texto` se ejecuta con `Lienzo::texto(x, y − desplazamiento, …)`; el alfa del color
+    del texto se ignora.
   - Redondeo: cada arista se redondea por separado (`f32::round`) y se pintan los pixeles de la
     arista izquierda/superior hasta antes de la derecha/inferior. Dos rectángulos que comparten
     una arista no dejan hueco ni se pisan.
@@ -209,7 +233,8 @@ impl Lienzo { pub fn texto(&mut self, x: f32, y: f32, texto: &str, tam: f32, col
 
 ### Línea de comandos
 - `farol --dom <html>` (fase 2), `farol --css <css>` (3), `farol --estilo <html> [selector]` (4),
-  `farol --layout <html> [ancho]` (5), `farol --render <html> <salida.bmp> [ancho alto]` (6),
+  `farol --layout <html> [ancho]` (5; desde la fase 8 muestra también cada renglón con su `y`,
+  alto, línea base y fragmentos), `farol --render <html> <salida.bmp> [ancho alto]` (6),
   `farol <html>` abre la página en la ventana (6), `farol --fuente` muestra la fuente (7).
 - Implementados en `src/comandos.rs`; `main.rs` solo reparte los argumentos. `--render` acepta
   `[ancho [alto]]`: ancho 800 por defecto y alto = el de la página (mínimo 100).
@@ -224,8 +249,12 @@ impl Lienzo { pub fn texto(&mut self, x: f32, y: f32, texto: &str, tam: f32, col
 - `bloque.rs`: el modelo de caja. El ancho baja del padre (CSS 2.1 §10.3.3: las siete medidas
   horizontales suman el ancho del contenedor; `auto`, centrado con márgenes `auto`, `max-width`,
   `%`); la posición apila cada hijo debajo del anterior; el alto sube de los hijos.
-- `en_linea.rs`: alto provisional de las cajas anónimas (ancho del texto en una línea / ancho
-  disponible, hacia arriba, × alto de línea). La fase 8 lo reemplaza por el layout en línea real.
+- `en_linea/`: el layout en línea (fase 8), llamado por `bloque.rs` para cada caja anónima.
+  - `piezas.rs`: aplana los nodos en una cinta de `Pieza`s (palabra, espacio, salto, abre y
+    cierra elemento) y colapsa los espacios, también entre nodos distintos.
+  - `lineas.rs`: reparte la cinta en renglones con partición voraz por unidades irrompibles,
+    quita el espacio del final de cada renglón, calcula alto y línea base, alinea y arma los
+    pedazos de los elementos en línea.
 - `tipos.rs`: los tipos del contrato. `imprimir.rs`: el texto de `farol --layout`.
 
 ## Por dentro de `pintado`
@@ -233,8 +262,10 @@ impl Lienzo { pub fn texto(&mut self, x: f32, y: f32, texto: &str, tam: f32, col
 - `mod.rs`: el `Lienzo` (la lista de pixeles) y los rectángulos.
 - `lista.rs`: del árbol de cajas a la display list (`Orden`, `lista_de_pintado`), con el fondo
   del lienzo de CSS 2.1 §14.2.
+- `en_linea.rs`: las órdenes de los renglones de una caja anónima (fondos y bordes de los
+  elementos en línea, texto, subrayado).
 - `rasterizar.rs`: `Lienzo::ejecutar`: redondeo de coordenadas, `css::Color` → `u32` y mezcla alfa
-  (decisión 6.1).
+  (decisión 6.1); las `Orden::Texto` se escriben con `Lienzo::texto`.
 - `bmp.rs`: el lienzo como archivo BMP de 24 bits, escrito byte a byte (decisión 6.2).
 - `fuente/glifos.txt`: los dibujos de cada letra, a mano, con `#` y `.` (decisión 7.1).
 - `fuente/mod.rs`: lee esos dibujos una sola vez, arma las letras con tilde, mide texto y lo

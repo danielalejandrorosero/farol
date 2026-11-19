@@ -38,6 +38,7 @@ pub fn construir(nodo: &NodoEstilado) -> Caja<'_> {
         estilo: Cow::Borrowed(&nodo.estilo),
         dimensiones: Dimensiones::default(),
         hijos,
+        lineas: Vec::new(),
     }
 }
 
@@ -67,5 +68,6 @@ fn cerrar_corrida<'a>(corrida: &mut Vec<&'a NodoEstilado>, padre: &Estilo, hijos
         estilo: Cow::Owned(estilo),
         dimensiones: Dimensiones::default(),
         hijos: Vec::new(),
+        lineas: Vec::new(),
     });
 }

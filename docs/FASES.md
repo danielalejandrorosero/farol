@@ -12,7 +12,7 @@ Fase actual: **8**
 | 5 | Layout de bloques | Cerrada | Árbol de cajas con coordenadas que coinciden con Chrome |
 | 6 | Pintado y display list | Cerrada | Primera página HTML con CSS dibujada por el motor |
 | 7 | Texto y fuentes | Cerrada | "Hola, mundo" con tildes en varios tamaños y colores |
-| 8 | Layout en línea | Pendiente | Un artículo se lee bien y se reacomoda al redimensionar |
+| 8 | Layout en línea | Cerrada | Un artículo se lee bien y se reacomoda al redimensionar |
 | 9 | Redes: URL, DNS, TCP, HTTP | Pendiente | Carga `http://example.com` y `http://info.cern.ch`; captura de Wireshark |
 | 10 | Recursos e imágenes | Pendiente | Página con CSS externo e imágenes completa |
 | 11 | Interacción | Pendiente | Dirección, clic en enlace, atrás, scroll |

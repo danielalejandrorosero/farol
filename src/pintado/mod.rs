@@ -1,15 +1,16 @@
-//! Pintado: recibe las cajas y entrega pixeles en el framebuffer. Fases 6 y 7.
+//! Pintado: recibe las cajas y entrega pixeles en el framebuffer. Fases 6, 7 y 8.
 //!
 //! Dos pasos, como un arquitecto que primero escribe el plano y después un obrero lo ejecuta:
 //!
 //! 1. `lista.rs`: el árbol de cajas → la **display list** (`Vec<Orden>`), qué pintar y en qué
-//!    orden, todavía sin pixeles.
+//!    orden, todavía sin pixeles. `en_linea.rs` agrega las órdenes del texto de cada renglón.
 //! 2. `rasterizar.rs`: `Lienzo::ejecutar` convierte cada orden en pixeles (redondeo y mezcla alfa).
 //!
 //! El `Lienzo` es la lista de pixeles sobre la que se dibuja. `fuente` le enseña a escribir y
 //! `bmp` lo guarda como imagen (`farol --render`).
 
 pub mod bmp;
+mod en_linea;
 pub mod fuente;
 mod lista;
 mod rasterizar;

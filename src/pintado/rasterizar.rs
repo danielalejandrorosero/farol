@@ -68,6 +68,11 @@ impl Lienzo {
                     let (x0, y0, x1, y1) = pixeles_de(*rect, desplazamiento);
                     self.rellenar(x0, y0, x1, y1, *color);
                 }
+                Orden::Texto { x, y, texto, tam, color, negrita, cursiva } => {
+                    // El texto no mezcla transparencia: un color `rgba` se pinta opaco.
+                    let pixel = a_pixel(*color);
+                    self.texto(*x, *y - desplazamiento, texto, *tam, pixel, *negrita, *cursiva);
+                }
             }
         }
     }
@@ -180,5 +185,24 @@ mod pruebas {
             }]);
             assert!(lienzo.pixeles().iter().all(|&p| p != 0));
         }
+    }
+
+    #[test]
+    fn la_orden_de_texto_escribe_como_lienzo_texto_con_el_scroll_restado() {
+        let mut directo = Lienzo::nuevo(80, 30, 0xFFFFFF);
+        directo.texto(3.0, 2.0, "Año", 16.0, 0x0000EE, true, false);
+        let mut por_orden = Lienzo::nuevo(80, 30, 0xFFFFFF);
+        let orden = Orden::Texto {
+            x: 3.0,
+            y: 12.0,
+            texto: "Año".into(),
+            tam: 16.0,
+            color: css::Color::rgb(0, 0, 0xEE),
+            negrita: true,
+            cursiva: false,
+        };
+        por_orden.ejecutar_desplazado(&[orden], 10.0);
+        assert_eq!(directo.pixeles(), por_orden.pixeles());
+        assert!(directo.pixeles().contains(&0x0000EE));
     }
 }

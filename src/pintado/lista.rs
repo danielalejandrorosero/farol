@@ -7,11 +7,15 @@
 //!
 //! El orden importa porque cada orden pinta **encima** de las anteriores, como capas de pintura:
 //! primero el fondo del lienzo, y luego, caja por caja en orden del documento, su fondo, sus
-//! bordes y después sus hijos. Así un hijo siempre queda encima del fondo de su padre.
+//! bordes y después sus hijos. Así un hijo siempre queda encima del fondo de su padre. Las cajas
+//! anónimas agregan su texto (fase 8, `en_linea.rs`): primero los fondos y bordes de los
+//! elementos en línea, después las letras y los subrayados.
 
 use std::ptr;
 
+use super::en_linea;
 use crate::css;
+use crate::estilo::Lados;
 use crate::layout::{Caja, Rect};
 
 /// Una instrucción de dibujo, en coordenadas de página.
@@ -22,7 +26,17 @@ pub enum Orden {
     FondoDelLienzo(css::Color),
     /// Un rectángulo relleno de un color (fondos y bordes).
     Rectangulo { rect: Rect, color: css::Color },
-    // La fase 8 agrega aquí `Texto { … }`.
+    /// Un pedazo de texto de un solo estilo. `y` es el tope de la caja de línea *natural* de la
+    /// letra (`fuente::alto_linea_natural(tam)`), igual que en `Lienzo::texto`; `tam` en px.
+    Texto {
+        x: f32,
+        y: f32,
+        texto: String,
+        tam: f32,
+        color: css::Color,
+        negrita: bool,
+        cursiva: bool,
+    },
 }
 
 const BLANCO: css::Color = css::Color::rgb(255, 255, 255);
@@ -62,6 +76,7 @@ fn pintar_caja(caja: &Caja, dueno_del_lienzo: Option<&Caja>, ordenes: &mut Vec<O
         agregar(ordenes, caja.dimensiones.caja_relleno(), caja.estilo.fondo);
     }
     pintar_bordes(caja, ordenes);
+    en_linea::pintar_lineas(&caja.lineas, ordenes);
     for hijo in &caja.hijos {
         pintar_caja(hijo, dueno_del_lienzo, ordenes);
     }
@@ -78,10 +93,19 @@ fn pintar_caja(caja: &Caja, dueno_del_lienzo: Option<&Caja>, ordenes: &mut Vec<O
 /// └───────── abajo ──────────┘
 /// ```
 fn pintar_bordes(caja: &Caja, ordenes: &mut Vec<Orden>) {
-    let fuera = caja.dimensiones.caja_borde();
-    let dentro = caja.dimensiones.caja_relleno();
-    let ancho = caja.dimensiones.borde;
-    let color = caja.estilo.borde_color;
+    let d = &caja.dimensiones;
+    pintar_anillo(d.caja_borde(), d.caja_relleno(), &d.borde, &caja.estilo.borde_color, ordenes);
+}
+
+/// Los cuatro lados del borde entre `fuera` (la caja de borde) y `dentro` (la de relleno). Lo
+/// usan también los elementos en línea (`en_linea.rs`).
+pub(super) fn pintar_anillo(
+    fuera: Rect,
+    dentro: Rect,
+    ancho: &Lados<f32>,
+    color: &Lados<css::Color>,
+    ordenes: &mut Vec<Orden>,
+) {
     let (fuera_der, fuera_abajo) = (fuera.x + fuera.ancho, fuera.y + fuera.alto);
     let (dentro_der, dentro_abajo) = (dentro.x + dentro.ancho, dentro.y + dentro.alto);
 
@@ -106,7 +130,7 @@ fn entre(x0: f32, y0: f32, x1: f32, y1: f32) -> Rect {
 }
 
 /// Agrega un rectángulo, salvo que sea invisible (alfa 0) o no tenga área.
-fn agregar(ordenes: &mut Vec<Orden>, rect: Rect, color: css::Color) {
+pub(super) fn agregar(ordenes: &mut Vec<Orden>, rect: Rect, color: css::Color) {
     if color.a > 0 && rect.ancho > 0.0 && rect.alto > 0.0 {
         ordenes.push(Orden::Rectangulo { rect, color });
     }
@@ -118,6 +142,7 @@ mod pruebas {
     use crate::estilo;
     use crate::html;
     use crate::layout;
+    use crate::pintado::fuente;
 
     /// HTML → DOM → estilos → layout a 800 px → display list. Envuelve la página en `<html>` si
     /// no lo trae (el parser no lo inventa, y sin él el primer bloque haría de raíz).
@@ -215,5 +240,108 @@ mod pruebas {
         let lista =
             ordenes("<body style='margin:0'><div style='background:#f00'>hola</div></body>");
         assert_eq!(rectangulos(&lista).len(), 1);
+    }
+
+    fn textos(ordenes: &[Orden]) -> Vec<&Orden> {
+        ordenes.iter().filter(|o| matches!(o, Orden::Texto { .. })).collect()
+    }
+
+    #[test]
+    fn el_texto_se_pinta_en_la_posicion_de_su_fragmento() {
+        // body sin margen; p con margen 16 arriba. El renglón empieza en y = 16 y mide 19.2: la
+        // línea base queda en 16 + 13 + 1.6 = 30.6 y `y` (el tope de la caja de línea natural de
+        // 20 px) en 30.6 − 15 = 15.6.
+        let lista = ordenes("<body style='margin:0'><p style='color:#f00'>Hola <b>mundo</b></p></body>");
+        let t = textos(&lista);
+        let ancho_hola = fuente::ancho_texto("Hola ", 16.0, false);
+        let esperado = [
+            Orden::Texto {
+                x: 0.0,
+                y: 30.6 - fuente::linea_base(16.0),
+                texto: "Hola ".into(),
+                tam: 16.0,
+                color: ROJO,
+                negrita: false,
+                cursiva: false,
+            },
+            Orden::Texto {
+                x: ancho_hola,
+                y: 30.6 - fuente::linea_base(16.0),
+                texto: "mundo".into(),
+                tam: 16.0,
+                color: ROJO,
+                negrita: true,
+                cursiva: false,
+            },
+        ];
+        assert_eq!(t.len(), 2);
+        for (orden, esperada) in t.iter().zip(&esperado) {
+            let (Orden::Texto { x, y, texto, .. }, Orden::Texto { x: ex, y: ey, texto: et, .. }) =
+                (orden, esperada)
+            else {
+                unreachable!()
+            };
+            assert!((x - ex).abs() < 0.01 && (y - ey).abs() < 0.01, "{orden:?}");
+            assert_eq!(texto, et);
+        }
+        // Lo demás (tamaño, color, negrita) coincide exacto.
+        let sin_posicion = |o: &Orden| match o {
+            Orden::Texto { texto, tam, color, negrita, cursiva, .. } => {
+                (texto.clone(), *tam, *color, *negrita, *cursiva)
+            }
+            _ => unreachable!(),
+        };
+        assert_eq!(sin_posicion(t[1]), sin_posicion(&esperado[1]));
+    }
+
+    #[test]
+    fn el_enlace_lleva_subrayado_debajo_de_la_base() {
+        let lista = ordenes("<body style='margin:0'><p style='margin:0'>a <a href=x>enlace</a></p></body>");
+        // Después del texto del enlace viene su raya, en el color del enlace (#0000ee).
+        let i = lista
+            .iter()
+            .position(|o| matches!(o, Orden::Texto { texto, .. } if texto == "enlace"))
+            .unwrap();
+        let Orden::Texto { x, .. } = lista[i] else { unreachable!() };
+        let Orden::Rectangulo { rect, color } = lista[i + 1] else {
+            panic!("falta el subrayado: {:?}", lista.get(i + 1))
+        };
+        assert_eq!(color, css::Color::rgb(0, 0, 0xee));
+        // Base en 13 + 1.6 = 14.6; la raya, un cuadrito (1 px a 16 px) más abajo, de 1 px.
+        assert!((rect.y - 15.6).abs() < 0.01 && rect.alto == 1.0, "{rect:?}");
+        assert_eq!(rect.x, x);
+        assert!((rect.ancho - fuente::ancho_texto("enlace", 16.0, false)).abs() < 0.01);
+        // El texto que no está subrayado no lleva raya.
+        assert_eq!(rectangulos(&lista).len(), 1);
+    }
+
+    #[test]
+    fn el_fondo_de_un_en_linea_va_antes_que_su_texto() {
+        let lista = ordenes(
+            "<body style='margin:0'><p style='margin:0'>x <span style='background:#0f0;             padding:0 4px'>y</span></p></body>",
+        );
+        let fondo = lista.iter().position(|o| matches!(o, Orden::Rectangulo { color, .. } if *color == VERDE));
+        let texto = lista.iter().position(|o| matches!(o, Orden::Texto { texto, .. } if texto == "y"));
+        assert!(fondo.unwrap() < texto.unwrap());
+        let (rect, _) = rectangulos(&lista)[0];
+        // Del alto de la celda (16), con la base en 14.6: de 14.6 − 13 = 1.6 a 17.6.
+        let esperado = r(fuente::ancho_texto("x ", 16.0, false), 1.6, fuente::ancho_texto("y", 16.0, false) + 8.0, 16.0);
+        let cerca = |a: f32, b: f32| (a - b).abs() < 0.01;
+        assert!(
+            cerca(rect.x, esperado.x)
+                && cerca(rect.y, esperado.y)
+                && cerca(rect.ancho, esperado.ancho)
+                && cerca(rect.alto, esperado.alto),
+            "{rect:?}"
+        );
+    }
+
+    #[test]
+    fn un_en_linea_con_borde_pinta_sus_cuatro_lados() {
+        let lista = ordenes(
+            "<body style='margin:0'><p style='margin:0'><span style='border:1px solid #00f'>y</span></p></body>",
+        );
+        let azules = rectangulos(&lista).iter().filter(|(_, c)| *c == AZUL).count();
+        assert_eq!(azules, 4);
     }
 }

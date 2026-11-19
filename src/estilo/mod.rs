@@ -24,8 +24,6 @@ use crate::css::{self, HojaDeEstilos, Selector};
 use crate::html::dom::{Documento, NodoId, TipoNodo};
 use cascada::{Candidata, Origen};
 use computar::Calculado;
-// `Alineacion` la usará el layout en línea (fase 8).
-#[allow(unused_imports)]
 pub use tipos::{Alineacion, Display, Estilo, Lados, Longitud, NodoEstilado};
 
 /// El CSS del navegador, metido dentro del ejecutable al compilar.
@@ -61,7 +59,7 @@ pub fn estilar(doc: &Documento, hojas_autor: &[HojaDeEstilos]) -> NodoEstilado {
     let hojas = con_origen(&navegador, hojas_autor);
     let raiz = Calculado::raiz();
     let hijos = estilar_hijos(doc, doc.raiz(), &raiz, &hojas);
-    NodoEstilado { nodo: doc.raiz(), texto: None, estilo: raiz.estilo, hijos }
+    NodoEstilado { nodo: doc.raiz(), texto: None, salto_de_linea: false, estilo: raiz.estilo, hijos }
 }
 
 fn con_origen<'h>(
@@ -86,6 +84,7 @@ fn estilar_hijos(
             TipoNodo::Texto(texto) => hijos.push(NodoEstilado {
                 nodo: hijo,
                 texto: Some(texto.clone()),
+                salto_de_linea: false,
                 estilo: Estilo::para_texto(&padre.estilo),
                 hijos: Vec::new(),
             }),
@@ -98,6 +97,7 @@ fn estilar_hijos(
                 hijos.push(NodoEstilado {
                     nodo: hijo,
                     texto: None,
+                    salto_de_linea: doc.nombre(hijo) == Some("br"),
                     hijos: estilar_hijos(doc, hijo, &calculado, hojas),
                     estilo: calculado.estilo,
                 })

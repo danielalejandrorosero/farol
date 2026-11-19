@@ -209,7 +209,7 @@ fn glifo(c: char) -> &'static Glifo {
 }
 
 /// ¿La fuente tiene un dibujo propio para este carácter?
-#[allow(dead_code)] // lo usan las pruebas; la fase 8 podrá avisar de caracteres sin glifo
+#[allow(dead_code)] // lo usan las pruebas
 pub fn tiene_glifo(c: char) -> bool {
     fuente().glifos.contains_key(&c)
 }
@@ -231,7 +231,6 @@ fn avance(c: char, negrita: bool) -> usize {
 
 /// Ancho en pixeles que ocupa `texto` escrito a tamaño `tam`.
 /// La negrita suma un cuadrito escalado por letra.
-#[allow(dead_code)] // lo usa la fase 8 para partir líneas
 pub fn ancho_texto(texto: &str, tam: f32, negrita: bool) -> f32 {
     let columnas: usize = texto.chars().map(|c| avance(c, negrita)).sum();
     columnas as f32 * escala(tam)
@@ -244,19 +243,16 @@ pub fn alto_linea_natural(tam: f32) -> f32 {
 
 /// Distancia desde el tope de la caja de línea hasta la línea base.
 /// Sirve para alinear en una misma línea textos de distinto tamaño.
-#[allow(dead_code)] // lo usa la fase 8
 pub fn linea_base(tam: f32) -> f32 {
     medio_interlineado(tam) + ascendente(tam)
 }
 
 /// Desde el tope de la celda hasta la línea base (incluye el espacio de las tildes).
-#[allow(dead_code)] // lo usa la fase 8
 pub fn ascendente(tam: f32) -> f32 {
     FILAS_HASTA_BASE as f32 * escala(tam)
 }
 
 /// Desde la línea base hasta el fondo de la celda (lo que bajan la g, la p...).
-#[allow(dead_code)] // lo usa la fase 8
 pub fn descendente(tam: f32) -> f32 {
     (FILAS_CELDA - FILAS_HASTA_BASE) as f32 * escala(tam)
 }

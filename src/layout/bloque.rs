@@ -19,8 +19,10 @@ use crate::estilo::{Estilo, Lados, Longitud};
 /// `ancho_contenedor`; el borde de arriba del margen de la caja queda en `y`.
 pub fn colocar(caja: &mut Caja, x: f32, y: f32, ancho_contenedor: f32) {
     if let TipoCaja::Anonima(nodos) = &caja.tipo {
-        // Una caja anónima no tiene márgenes, bordes ni relleno: ocupa todo el ancho.
-        let alto = en_linea::alto_estimado(nodos, ancho_contenedor, caja.estilo.alto_linea);
+        // Una caja anónima no tiene márgenes, bordes ni relleno: ocupa todo el ancho, y mide de
+        // alto lo que midan sus renglones apilados.
+        caja.lineas = en_linea::colocar(nodos, &caja.estilo, x, y, ancho_contenedor);
+        let alto = caja.lineas.iter().map(|l| l.rect.alto).sum();
         caja.dimensiones.contenido = Rect { x, y, ancho: ancho_contenedor, alto };
         return;
     }

@@ -7,11 +7,16 @@
 //! ```text
 //! └── <div class="caja"> bloque · (40, 162.4) 720 × 38.4 · margen 20 · borde 2 · relleno 10
 //!     └── anónima · (40, 162.4) 720 × 19.2 · "Una caja con negrita, cursiva y…"
+//!         └── línea · y 162.4 alto 19.2 base 176.8 · 40 "Una caja con " · 129 "negrita" · …
 //! ```
+//!
+//! Bajo cada caja anónima va un renglón por línea: su `y`, su alto, la `y` de su línea base y
+//! cada fragmento con la `x` donde empieza y su texto. Un elemento en línea con fondo o borde
+//! aparece como `▭ x–x` (de dónde a dónde va su caja en ese renglón).
 
 use std::fmt::Write;
 
-use super::tipos::{Caja, TipoCaja};
+use super::tipos::{Caja, Linea, TipoCaja};
 use crate::estilo::{Lados, NodoEstilado};
 use crate::html::dom::{Documento, NodoId, TipoNodo};
 
@@ -24,6 +29,10 @@ impl Caja<'_> {
 }
 
 fn imprimir_hijos(caja: &Caja, doc: &Documento, prefijo: &str, salida: &mut String) {
+    for (i, linea) in caja.lineas.iter().enumerate() {
+        let rama = if i + 1 == caja.lineas.len() { "└── " } else { "├── " };
+        let _ = writeln!(salida, "{prefijo}{rama}{}", rotulo_linea(linea));
+    }
     for (i, hijo) in caja.hijos.iter().enumerate() {
         let ultimo = i + 1 == caja.hijos.len();
         let rama = if ultimo { "└── " } else { "├── " };
@@ -50,6 +59,21 @@ fn rotulo(caja: &Caja, doc: &Documento) -> String {
         let _ = write!(r, " · {}", texto_corto(nodos));
     }
     r
+}
+
+fn rotulo_linea(linea: &Linea) -> String {
+    let r = linea.rect;
+    let mut texto = format!("línea · y {} alto {} base {}", num(r.y), num(r.alto), num(linea.base));
+    let visibles = linea.cajas.iter().filter(|c| c.estilo.fondo.a > 0 || c.borde.en_orden() != [0.0; 4]);
+    for c in visibles {
+        let _ = write!(texto, " · ▭ {}–{}", num(c.rect.x), num(c.rect.x + c.rect.ancho));
+    }
+    for f in &linea.fragmentos {
+        let corto: String = f.texto.chars().take(30).collect();
+        let puntos = if f.texto.chars().count() > 30 { "…" } else { "" };
+        let _ = write!(texto, " · {} \"{corto}{puntos}\"", num(f.rect.x));
+    }
+    texto
 }
 
 /// `<div id="x" class="caja">` o `#documento`: solo los atributos que ayudan a ubicarse.

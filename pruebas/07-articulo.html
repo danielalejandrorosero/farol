@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Prueba 07: un artículo</title>
+  <style>
+    body { background-color: #f4f1ea; color: #2a2a2a; margin: 0; font-size: 16px; line-height: 1.5; }
+
+    .cabecera { background-color: #0f3b4c; color: #f4f1ea; padding: 12px 24px; }
+    .cabecera a { color: #ffd479; text-decoration: none; }
+    .marca { font-weight: bold; font-size: 20px; }
+
+    .hoja { max-width: 680px; margin: 0 auto; padding: 24px 24px 40px 24px; background-color: #ffffff;
+            border-left: 1px solid #ded8cb; border-right: 1px solid #ded8cb; }
+
+    .seccion { color: #b4452c; font-weight: bold; font-size: 13px; margin: 0; }
+    h1 { font-size: 34px; line-height: 1.2; color: #14212b; margin: 8px 0 12px 0; }
+    .subtitulo { font-size: 19px; color: #55606a; font-style: italic; margin: 0 0 16px 0; }
+    .firma { font-size: 13px; color: #5c656d; border-bottom: 1px solid #e6e1d6; padding-bottom: 12px; }
+    .firma b { color: #2a2a2a; }
+
+    h2 { font-size: 22px; color: #0f3b4c; margin: 28px 0 8px 0; }
+    p { margin: 0 0 14px 0; }
+    a { color: #1a5fb4; }
+    .resaltado { background-color: #fff1a8; padding: 0 3px; }
+    .etiqueta { background-color: #0f3b4c; color: #ffffff; font-size: 12px; font-weight: bold;
+                padding: 2px 6px; border: 1px solid #082530; }
+
+    blockquote { margin: 20px 0; padding: 8px 20px; border-left: 4px solid #b4452c;
+                 background-color: #faf6ee; color: #4a3b33; font-size: 18px; font-style: italic; }
+    .cita-autor { text-align: right; font-size: 14px; font-style: normal; color: #6a5a50; margin: 0; }
+
+    .recuadro { border: 2px solid #0f3b4c; background-color: #e9f2f4; padding: 12px 16px; margin: 22px 0; }
+    .recuadro h3 { margin: 0 0 6px 0; color: #0f3b4c; font-size: 17px; }
+    .recuadro p { margin: 0; font-size: 15px; }
+
+    ul { margin: 0 0 14px 0; padding-left: 28px; }
+    li { margin-bottom: 4px; }
+
+    .centrado { text-align: center; color: #5c656d; font-size: 14px; }
+    .pie { text-align: center; font-size: 13px; color: #5c656d; padding: 16px; }
+  </style>
+</head>
+<body>
+  <div class="cabecera">
+    <span class="marca">El Farol Diario</span> · <a href="#">Ciencia</a> · <a href="#">Tecnología</a> · <a href="#">Cultura</a>
+  </div>
+
+  <div class="hoja">
+    <p class="seccion">TECNOLOGÍA · NAVEGADORES</p>
+    <h1>Cómo un navegador decide dónde termina cada línea</h1>
+    <p class="subtitulo">Detrás de cada párrafo que lees en pantalla hay miles de medidas: el ancho de cada letra, cada espacio y cada renglón.</p>
+    <p class="firma">Por <b>Lucía Ñañez</b> · 18 de noviembre de 2026 · Lectura de 4 minutos</p>
+
+    <p>Cuando abres una página web, el texto parece simplemente <i>estar ahí</i>. Pero el navegador
+       no recibe renglones: recibe una tira larguísima de palabras y tiene que decidir, una por una,
+       en qué renglón cae cada una. A ese trabajo se le llama <b>layout en línea</b>, y es una de
+       las partes más delicadas de cualquier motor, desde los más famosos hasta
+       <a href="#">Farol</a>, un navegador escrito desde cero.</p>
+
+    <p>El método más común es el <span class="resaltado">algoritmo voraz</span>: se escribe palabra
+       tras palabra y, cuando la siguiente no cabe, se baja al renglón de abajo. Es exactamente lo
+       que hace una persona con un cuaderno. Funciona tan bien que la mayoría de los navegadores lo
+       usa para casi todo el texto de la web.</p>
+
+    <h2>La línea base, el renglón invisible</h2>
+
+    <p>Todas las letras de una línea se apoyan en una misma <b>línea base</b>, aunque tengan
+       tamaños distintos. Por eso una palabra <span style="font-size: 26px">grande</span> y otra
+       <span style="font-size: 12px">pequeña</span> pueden convivir en el mismo renglón sin que
+       ninguna parezca flotar. Las colas de la <i>g</i>, la <i>p</i> y la <i>ñ</i> bajan por
+       debajo de esa línea; las tildes de <b>Á</b>, <b>É</b> y <b>Ñ</b> suben por encima.</p>
+
+    <blockquote>
+      <p>«Un buen tipógrafo no se nota. Un mal renglón, en cambio, salta a la vista de cualquiera.»</p>
+      <p class="cita-autor">— Proverbio de imprenta</p>
+    </blockquote>
+
+    <h2>Lo que hay que medir</h2>
+
+    <p>Antes de partir un párrafo, el motor necesita saber varias cosas:</p>
+    <ul>
+      <li>El <b>ancho de cada palabra</b>, sumando letra por letra con la fuente elegida.</li>
+      <li>Qué espacios cuentan: diez espacios seguidos en el HTML valen uno solo.</li>
+      <li>El <i>relleno</i> y el borde de elementos como <span class="etiqueta">ETIQUETA</span>.</li>
+      <li>El alto de cada renglón, que depende de la letra más grande que lleve.</li>
+    </ul>
+
+    <div class="recuadro">
+      <h3>¿Sabías que…?</h3>
+      <p>Al achicar la ventana no cambia ni una letra: cambia el ancho disponible, y el navegador
+         vuelve a repartir las mismas palabras en más renglones. Prueba a redimensionar esta
+         ventana y mira cómo el texto se reacomoda solo.</p>
+    </div>
+
+    <p>Un salto forzado con <code>br</code> corta la línea aunque quede espacio:<br>
+       esta frase empieza en un renglón nuevo.<br>
+       Y esta también, como en un poema o una dirección postal.</p>
+
+    <p class="centrado">· · ·</p>
+
+    <p>Las palabras muy largas, como <b>electroencefalografista</b> o
+       <i>supercalifragilísticoespialidoso</i>, nunca se parten: si no caben, pasan enteras al
+       renglón siguiente. ¿Y si son más anchas que el renglón completo? Entonces se quedan solas y se
+       asoman por el borde, igual que en cualquier navegador.</p>
+
+    <p style="text-align: right; color: #5c656d; font-size: 14px">Continúa en la página 2 »</p>
+  </div>
+
+  <div class="pie">Farol · un navegador escrito desde cero en Rust · Fase 8</div>
+</body>
+</html>

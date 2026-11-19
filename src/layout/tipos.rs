@@ -85,7 +85,8 @@ pub enum TipoCaja<'a> {
     /// La caja de un nodo con `display: block` (o la raíz `#documento`).
     Bloque(NodoId),
     /// Un bloque sin etiqueta que envuelve una corrida de contenido en línea (textos, `<b>`,
-    /// `<a>`…) que quedó entre bloques. Guarda esos nodos tal cual: la fase 8 los parte en líneas.
+    /// `<a>`…) que quedó entre bloques. Guarda esos nodos tal cual; el layout en línea los parte
+    /// en líneas y deja el resultado en `Caja::lineas`.
     Anonima(Vec<&'a NodoEstilado>),
 }
 
@@ -99,4 +100,46 @@ pub struct Caja<'a> {
     pub estilo: Cow<'a, Estilo>,
     pub dimensiones: Dimensiones,
     pub hijos: Vec<Caja<'a>>,
+    /// Las líneas de texto de una caja anónima, de arriba hacia abajo. Vacío en los bloques.
+    pub lineas: Vec<Linea<'a>>,
+}
+
+/// Una caja de línea: un renglón de texto dentro de una caja anónima.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Linea<'a> {
+    /// El renglón entero: empieza en el borde izquierdo del contenido, mide todo el ancho
+    /// disponible y su alto es el que pide lo más alto que lleva.
+    pub rect: Rect,
+    /// La `y` de la línea base (en coordenadas de página): ahí se apoyan todas las letras de la
+    /// línea, sean del tamaño que sean.
+    pub base: f32,
+    pub fragmentos: Vec<Fragmento<'a>>,
+    /// Fondos y bordes de los elementos en línea (`span`, `a`) en este renglón, de afuera hacia
+    /// adentro: se pintan antes que el texto y en este orden.
+    pub cajas: Vec<CajaEnLinea<'a>>,
+}
+
+/// Un pedazo de texto con un solo estilo, ya ubicado.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Fragmento<'a> {
+    /// `x` donde empieza la primera letra, `ancho` lo que avanza la pluma; `y` y `alto` son la
+    /// caja de línea *natural* de su letra (`fuente::alto_linea_natural`): exactamente lo que
+    /// espera `Lienzo::texto`.
+    pub rect: Rect,
+    /// Con los espacios ya colapsados (y el espacio duro U+00A0 convertido en espacio común).
+    pub texto: String,
+    /// El estilo del nodo de texto, prestado del árbol estilado: letra, color, subrayado.
+    pub estilo: &'a Estilo,
+}
+
+/// El pedazo de un elemento en línea que cae en una línea. Si el elemento se parte entre dos
+/// líneas, cada línea tiene su pedazo; el borde y el relleno izquierdos van solo en el primero y
+/// los derechos solo en el último (como `box-decoration-break: slice`, lo normal en CSS).
+#[derive(Debug, Clone, PartialEq)]
+pub struct CajaEnLinea<'a> {
+    /// La caja de borde del pedazo.
+    pub rect: Rect,
+    /// El grosor del borde de cada lado en este pedazo (0 en los lados cortados).
+    pub borde: Lados<f32>,
+    pub estilo: &'a Estilo,
 }

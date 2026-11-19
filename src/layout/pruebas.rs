@@ -7,7 +7,6 @@
 use super::*;
 use crate::estilo::{self, Estilo};
 use crate::html::{self, Documento};
-use crate::pintado::fuente;
 
 fn estilar(pagina: &str) -> (Documento, NodoEstilado) {
     let doc = html::parsear(pagina);
@@ -235,7 +234,7 @@ fn texto_suelto_entre_bloques_va_en_cajas_anonimas() {
     let div = buscar(&doc, &raiz, "div");
     let tipos: Vec<bool> = div.hijos.iter().map(es_anonima).collect();
     assert_eq!(tipos, [true, false, true]);
-    // La primera anónima guarda el texto y el <b>, tal cual, para la fase 8.
+    // La primera anónima guarda el texto y el <b>, tal cual, para el layout en línea.
     let TipoCaja::Anonima(nodos) = &div.hijos[0].tipo else { unreachable!() };
     assert_eq!(nodos.len(), 2);
     // Es invisible: hereda la letra pero no el fondo, los bordes ni los márgenes.
@@ -266,7 +265,7 @@ fn un_bloque_dentro_de_un_en_linea_lo_vuelve_bloque() {
     assert_eq!(tipos, [true, false]);
 }
 
-// --- Alto provisional del texto ---
+// --- Alto del texto (el detalle está en en_linea/pruebas.rs) ---
 
 #[test]
 fn una_linea_de_texto_mide_un_alto_de_linea() {
@@ -277,36 +276,16 @@ fn una_linea_de_texto_mide_un_alto_de_linea() {
 }
 
 #[test]
-fn texto_largo_ocupa_varias_lineas() {
+fn a_mas_ancho_menos_lineas() {
     let frase = "palabra ".repeat(50);
     let (doc, est) = estilar(&format!("<style>body{{margin:0}}</style><body><p>{frase}</p></body>"));
-    let raiz = calcular(&est, 200.0);
-    // 50 palabras y 49 espacios (el del final no cuenta) en una sola línea, partidas cada 200 px.
-    let total = 50.0 * fuente::ancho_texto("palabra", 16.0, false) + 49.0 * fuente::ancho_texto(" ", 16.0, false);
-    let lineas = (total / 200.0).ceil();
-    assert!(lineas > 5.0, "la cuenta debería dar varias líneas: {lineas}");
-    assert!(casi(contenido(buscar(&doc, &raiz, "p")).3, lineas * 19.2));
-    // A más ancho, menos líneas.
+    let angosta = calcular(&est, 200.0);
     let ancha = calcular(&est, 2000.0);
-    assert!(contenido(buscar(&doc, &ancha, "p")).3 < contenido(buscar(&doc, &raiz, "p")).3);
-}
-
-#[test]
-fn los_espacios_se_colapsan_al_medir() {
-    let (doc, est) = estilar("<body><p>  a \n\n   b  </p><p>a b</p></body>");
-    let raiz = calcular(&est, 800.0);
-    let TipoCaja::Anonima(nodos) = &buscar(&doc, &raiz, "p").hijos[0].tipo else { unreachable!() };
-    let esperado = fuente::ancho_texto("a b", 16.0, false);
-    assert!(casi(en_linea::ancho_en_una_linea(nodos, 800.0), esperado));
-}
-
-#[test]
-fn el_relleno_de_un_en_linea_ocupa_lugar_en_la_linea() {
-    let (doc, est) = estilar("<style>span{padding:0 8px; border:1px solid}</style><body><p><span>x</span></p></body>");
-    let raiz = calcular(&est, 800.0);
-    let TipoCaja::Anonima(nodos) = &buscar(&doc, &raiz, "p").hijos[0].tipo else { unreachable!() };
-    let esperado = fuente::ancho_texto("x", 16.0, false) + 2.0 * (8.0 + 1.0);
-    assert!(casi(en_linea::ancho_en_una_linea(nodos, 800.0), esperado));
+    let alto = |raiz: &Caja| contenido(buscar(&doc, raiz, "p")).3;
+    // Cada renglón mide 19.2: el alto es un múltiplo exacto.
+    let renglones = alto(&angosta) / 19.2;
+    assert!(renglones > 5.0 && casi(renglones, renglones.round()), "{renglones}");
+    assert!(alto(&ancha) < alto(&angosta));
 }
 
 // --- Impresión ---
@@ -320,4 +299,9 @@ fn imprimir_muestra_posicion_tamano_y_capas() {
     assert!(texto.contains("<div class=\"caja\"> bloque · (40, "));
     assert!(texto.contains("· margen 20 · borde 2 · relleno 10"));
     assert!(texto.contains("anónima · (8, 29.44) 784 × 38.4 · \"Hola, mundo\""));
+    // Debajo, sus renglones: la línea base del h1 queda a 29.2 del tope (26 de letra + 3.2 de
+    // medio interlineado) y el fragmento empieza en x = 8.
+    assert!(texto.contains("línea · y 29.44 alto 38.4 base 58.64 · 8 \"Hola, mundo\""));
+    // Solo los elementos en línea con fondo o borde se muestran como ▭.
+    assert!(!texto.contains('▭'));
 }
