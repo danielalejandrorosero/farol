@@ -15,17 +15,26 @@ use winit::window::{Window, WindowId};
 use crate::pintado::Lienzo;
 
 /// Abre la ventana y se queda atendiendo eventos hasta que el usuario la cierra.
-/// `dibujar` se llama cada vez que hay que repintar, con un lienzo del tamaño actual.
-pub fn abrir(titulo: &str, dibujar: fn(&mut Lienzo)) -> Result<(), Box<dyn std::error::Error>> {
+/// `dibujar` se llama cada vez que hay que repintar (al abrir, al redimensionar), con un lienzo
+/// del tamaño actual.
+///
+/// `dibujar` es un *cierre* (`FnMut`): una función que puede llevar datos consigo, como una
+/// función de JavaScript que captura variables de afuera. Así la página (su DOM y sus estilos)
+/// viaja dentro de `dibujar` y `ui` no necesita saber qué es una página. `FnMut` quiere decir que
+/// puede modificar lo que lleva entre una llamada y otra. Una función común (`fn`) también sirve.
+pub fn abrir<F: FnMut(&mut Lienzo)>(
+    titulo: &str,
+    dibujar: F,
+) -> Result<(), Box<dyn std::error::Error>> {
     let bucle = EventLoop::new()?;
     let mut app = App { titulo: titulo.to_string(), dibujar, ventana: None };
     bucle.run_app(&mut app)?;
     Ok(())
 }
 
-struct App {
+struct App<F> {
     titulo: String,
-    dibujar: fn(&mut Lienzo),
+    dibujar: F,
     ventana: Option<Ventana>,
 }
 
@@ -34,7 +43,7 @@ struct Ventana {
     superficie: Surface<Rc<Window>, Rc<Window>>,
 }
 
-impl ApplicationHandler for App {
+impl<F: FnMut(&mut Lienzo)> ApplicationHandler for App<F> {
     /// El sistema operativo avisa que ya se puede crear la ventana.
     fn resumed(&mut self, bucle: &ActiveEventLoop) {
         if self.ventana.is_some() {

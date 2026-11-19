@@ -71,6 +71,20 @@ impl Documento {
         self.agregar(padre, TipoNodo::Texto(texto.to_string()));
     }
 
+    /// El texto del primer `<title>`, con los espacios colapsados, o `None` si no hay o está vacío.
+    /// Es lo que la ventana muestra en su barra de título.
+    pub fn titulo(&self) -> Option<String> {
+        let id = (0..self.nodos.len()).map(NodoId).find(|&id| self.nombre(id) == Some("title"))?;
+        let mut texto = String::new();
+        for &hijo in &self.nodo(id).hijos {
+            if let TipoNodo::Texto(t) = &self.nodo(hijo).tipo {
+                texto += t;
+            }
+        }
+        let limpio = texto.split_whitespace().collect::<Vec<_>>().join(" ");
+        (!limpio.is_empty()).then_some(limpio)
+    }
+
     /// El árbol dibujado con líneas, como lo imprime `farol --dom`.
     /// Los textos que son solo espacios en blanco existen en el DOM, pero no se muestran.
     pub fn imprimir(&self) -> String {
@@ -135,6 +149,15 @@ mod pruebas {
         assert_eq!(div, NodoId(1));
         assert_eq!(doc.nodo(div).padre, Some(doc.raiz()));
         assert_eq!(doc.nodo(doc.raiz()).hijos, vec![div]);
+    }
+
+    #[test]
+    fn el_titulo_es_el_texto_del_title_sin_espacios_de_mas() {
+        let doc = crate::html::parsear("<head><title>
+  Hola,   mundo </title></head>");
+        assert_eq!(doc.titulo().as_deref(), Some("Hola, mundo"));
+        assert_eq!(crate::html::parsear("<p>sin título</p>").titulo(), None);
+        assert_eq!(crate::html::parsear("<title> </title>").titulo(), None);
     }
 
     #[test]

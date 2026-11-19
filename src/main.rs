@@ -1,5 +1,6 @@
 //! Farol: un navegador web desde cero.
 
+mod comandos;
 mod css;
 mod estilo;
 mod html;
@@ -16,7 +17,8 @@ const NOMBRE: &str = "Farol";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const USO: &str = "Uso:
-  farol                      abre la ventana
+  farol                      abre la ventana con la escena de prueba
+  farol <archivo>            abre una página HTML en la ventana
   farol --dom <archivo>      imprime el árbol DOM de una página HTML
   farol --css <archivo>      imprime las reglas de una hoja de estilos CSS
   farol --estilo <archivo> [selector]
@@ -24,6 +26,9 @@ const USO: &str = "Uso:
                              qué declaraciones pelean en cada elemento y cuál gana
   farol --layout <archivo> [ancho]
                              imprime el árbol de cajas con posición y tamaño (ancho 800)
+  farol --render <archivo> <salida.bmp> [ancho [alto]]
+                             pinta la página en una imagen BMP, sin abrir ventana (ancho 800;
+                             alto: el de la página)
   farol --fuente             abre la ventana con la demostración de la fuente";
 
 fn main() {
@@ -31,11 +36,20 @@ fn main() {
     match argumentos.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
         [] => abrir_ventana(escena_de_prueba),
         ["--fuente"] => abrir_ventana(pintado::fuente::demostracion::escena),
-        ["--dom", ruta] => imprimir_dom(ruta),
-        ["--css", ruta] => imprimir_css(ruta),
-        ["--estilo", ruta, resto @ ..] if resto.len() <= 1 => imprimir_estilo(ruta, resto.first()),
-        ["--layout", ruta] => imprimir_layout(ruta, "800"),
-        ["--layout", ruta, ancho] => imprimir_layout(ruta, ancho),
+        ["--dom", ruta] => comandos::imprimir_dom(ruta),
+        ["--css", ruta] => comandos::imprimir_css(ruta),
+        ["--estilo", ruta, resto @ ..] if resto.len() <= 1 => {
+            comandos::imprimir_estilo(ruta, resto.first())
+        }
+        ["--layout", ruta] => comandos::imprimir_layout(ruta, "800"),
+        ["--layout", ruta, ancho] => comandos::imprimir_layout(ruta, ancho),
+        ["--render", ruta, salida, medidas @ ..] if medidas.len() <= 2 => {
+            comandos::renderizar(ruta, salida, medidas.first().copied(), medidas.get(1).copied())
+        }
+        [ruta] if !ruta.starts_with("--") => {
+            println!("{NOMBRE} {VERSION}");
+            comandos::abrir_pagina(ruta, NOMBRE)
+        }
         _ => {
             eprintln!("{USO}");
             exit(2);
@@ -43,82 +57,7 @@ fn main() {
     }
 }
 
-fn imprimir_dom(ruta: &str) {
-    let bytes = match std::fs::read(ruta) {
-        Ok(bytes) => bytes,
-        Err(error) => {
-            eprintln!("No se pudo leer {ruta}: {error}");
-            exit(1);
-        }
-    };
-    // Si el archivo trae bytes que no son UTF-8 válido, se reemplazan por � en vez de fallar.
-    let texto = String::from_utf8_lossy(&bytes);
-    print!("{}", html::parsear(&texto).imprimir());
-}
-
-fn imprimir_css(ruta: &str) {
-    let bytes = match std::fs::read(ruta) {
-        Ok(bytes) => bytes,
-        Err(error) => {
-            eprintln!("No se pudo leer {ruta}: {error}");
-            exit(1);
-        }
-    };
-    let (hoja, avisos) = css::parsear_con_avisos(&String::from_utf8_lossy(&bytes));
-    print!("{}", hoja.imprimir());
-    let declaraciones: usize = hoja.reglas.iter().map(|r| r.declaraciones.len()).sum();
-    println!("
-{} reglas, {declaraciones} declaraciones.", hoja.reglas.len());
-    if !avisos.is_empty() {
-        println!("
-Descartado ({}):", avisos.len());
-        for aviso in avisos {
-            println!("  - {aviso}");
-        }
-    }
-}
-
-fn imprimir_estilo(ruta: &str, selector: Option<&&str>) {
-    let bytes = match std::fs::read(ruta) {
-        Ok(bytes) => bytes,
-        Err(error) => {
-            eprintln!("No se pudo leer {ruta}: {error}");
-            exit(1);
-        }
-    };
-    let doc = html::parsear(&String::from_utf8_lossy(&bytes));
-    let hojas = estilo::hojas_del_documento(&doc);
-    let Some(selector) = selector else {
-        print!("{}", estilo::estilar(&doc, &hojas).imprimir(&doc));
-        return;
-    };
-    // El selector se lee con el mismo parser de CSS, como si fuera el comienzo de una regla.
-    match css::parsear(&format!("{selector} {{}}")).reglas.first().map(|r| &r.selectores[..]) {
-        Some([selector]) => print!("{}", estilo::explicar(&doc, &hojas, selector)),
-        _ => {
-            eprintln!("No se entiende el selector `{selector}` (se acepta uno solo, sin comas).");
-            exit(2);
-        }
-    }
-}
-
-fn imprimir_layout(ruta: &str, ancho: &str) {
-    let Ok(ancho) = ancho.parse::<f32>() else {
-        eprintln!("El ancho debe ser un número de pixeles, no `{ancho}`.");
-        exit(2);
-    };
-    let bytes = match std::fs::read(ruta) {
-        Ok(bytes) => bytes,
-        Err(error) => {
-            eprintln!("No se pudo leer {ruta}: {error}");
-            exit(1);
-        }
-    };
-    let doc = html::parsear(&String::from_utf8_lossy(&bytes));
-    let estilado = estilo::estilar(&doc, &estilo::hojas_del_documento(&doc));
-    print!("{}", layout::calcular(&estilado, ancho).imprimir(&doc));
-}
-
+/// Abre la ventana con una escena fija (sin página).
 fn abrir_ventana(escena: fn(&mut Lienzo)) {
     println!("{NOMBRE} {VERSION}");
     if let Err(error) = ui::abrir(&format!("{NOMBRE} {VERSION}"), escena) {

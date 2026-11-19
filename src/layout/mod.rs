@@ -18,7 +18,7 @@ mod imprimir;
 pub mod tipos;
 
 use crate::estilo::NodoEstilado;
-// El pintado (fase 6) usará también `Dimensiones`, `Rect` y `TipoCaja`.
+// El pintado usa `Rect` y `TipoCaja`; `Dimensiones` se nombra solo dentro de `layout` por ahora.
 #[allow(unused_imports)]
 pub use tipos::{Caja, Dimensiones, Rect, TipoCaja};
 

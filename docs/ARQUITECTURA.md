@@ -164,9 +164,17 @@ pub fn calcular<'a>(raiz: &'a NodoEstilado, ancho_ventana: f32) -> Caja<'a>
 
 ### `pintado` (fases 6 y 7)
 ```rust
-pub enum Orden { Rectangulo { rect: Rect, color: Color }, Texto { /* fase 8 */ } }
+pub enum Orden {
+    FondoDelLienzo(css::Color),                      // siempre la primera: cubre todo el lienzo
+    Rectangulo { rect: layout::Rect, color: css::Color },
+    // Texto { … }                                   // fase 8
+}
 pub fn lista_de_pintado(raiz: &Caja) -> Vec<Orden>
-impl Lienzo { pub fn ejecutar(&mut self, ordenes: &[Orden]) }
+impl Lienzo {
+    pub fn ejecutar(&mut self, ordenes: &[Orden])                          // sin scroll
+    pub fn ejecutar_desplazado(&mut self, ordenes: &[Orden], desplazamiento: f32)  // fase 11
+}
+pub mod bmp { pub fn codificar(lienzo: &Lienzo) -> Vec<u8> }   // BMP de 24 bits (decisión 6.2)
 // fase 7, en pintado::fuente:
 pub fn ancho_texto(texto: &str, tam: f32, negrita: bool) -> f32
 pub fn alto_linea_natural(tam: f32) -> f32          // 1,25 × tam
@@ -182,11 +190,32 @@ impl Lienzo { pub fn texto(&mut self, x: f32, y: f32, texto: &str, tam: f32, col
   del dibujo = un pixel). Los glifos están dibujados en `src/pintado/fuente/glifos.txt`.
 - `Lienzo` sigue trabajando con `u32` `0x00RRGGBB`; la conversión desde `css::Color` (y la
   mezcla alfa) se hace en `pintado`.
+- Implementado así en la fase 6. Ajustes al contrato, con su motivo:
+  - `Orden::FondoDelLienzo`: el fondo de `html` (o de `body` si el de `html` es transparente;
+    blanco si los dos lo son) cubre **todo** el lienzo, no solo la caja (CSS 2.1 §14.2). La display
+    list no conoce el tamaño de la ventana, así que es una orden aparte que llena todo. El elemento
+    que prestó su fondo no lo vuelve a pintar en su caja. `html` es el primer bloque bajo
+    `#documento` y `body` el primer bloque bajo `html` (las cajas no guardan la etiqueta).
+  - Orden de pintado: por cada caja, en orden del documento, su fondo (sobre `caja_relleno()`),
+    sus cuatro bordes (el anillo entre `caja_borde()` y `caja_relleno()`; arriba y abajo se quedan
+    con las esquinas) y después sus hijos. Lo transparente (alfa 0) o sin área no genera orden.
+  - Los elementos en línea (`span`, `a`, `b`) todavía no pintan fondo ni borde: viven dentro de
+    las cajas anónimas y no tienen rectángulo propio hasta la fase 8.
+  - Redondeo: cada arista se redondea por separado (`f32::round`) y se pintan los pixeles de la
+    arista izquierda/superior hasta antes de la derecha/inferior. Dos rectángulos que comparten
+    una arista no dejan hueco ni se pisan.
+  - `ejecutar_desplazado` resta el scroll a todas las `y` (lo que está en `y = desplazamiento`
+    queda en la fila 0). Hoy siempre se usa `ejecutar` (desplazamiento 0).
 
 ### Línea de comandos
 - `farol --dom <html>` (fase 2), `farol --css <css>` (3), `farol --estilo <html> [selector]` (4),
   `farol --layout <html> [ancho]` (5), `farol --render <html> <salida.bmp> [ancho alto]` (6),
   `farol <html>` abre la página en la ventana (6), `farol --fuente` muestra la fuente (7).
+- Implementados en `src/comandos.rs`; `main.rs` solo reparte los argumentos. `--render` acepta
+  `[ancho [alto]]`: ancho 800 por defecto y alto = el de la página (mínimo 100).
+- `ui::abrir(titulo, dibujar)` recibe un cierre `FnMut(&mut Lienzo)` (fase 6; antes un `fn`).
+  `farol <html>` calcula DOM y estilos una vez y mete el árbol estilado dentro del cierre; el
+  layout y el pintado se rehacen en cada repintado con el ancho real de la ventana.
 
 ## Por dentro de `layout`
 
@@ -202,6 +231,11 @@ impl Lienzo { pub fn texto(&mut self, x: f32, y: f32, texto: &str, tam: f32, col
 ## Por dentro de `pintado`
 
 - `mod.rs`: el `Lienzo` (la lista de pixeles) y los rectángulos.
+- `lista.rs`: del árbol de cajas a la display list (`Orden`, `lista_de_pintado`), con el fondo
+  del lienzo de CSS 2.1 §14.2.
+- `rasterizar.rs`: `Lienzo::ejecutar`: redondeo de coordenadas, `css::Color` → `u32` y mezcla alfa
+  (decisión 6.1).
+- `bmp.rs`: el lienzo como archivo BMP de 24 bits, escrito byte a byte (decisión 6.2).
 - `fuente/glifos.txt`: los dibujos de cada letra, a mano, con `#` y `.` (decisión 7.1).
 - `fuente/mod.rs`: lee esos dibujos una sola vez, arma las letras con tilde, mide texto y lo
   escribe en el lienzo a cualquier tamaño.

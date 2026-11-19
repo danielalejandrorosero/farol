@@ -1,8 +1,20 @@
 //! Pintado: recibe las cajas y entrega pixeles en el framebuffer. Fases 6 y 7.
 //!
-//! El `Lienzo` es la lista de pixeles sobre la que se dibuja. `fuente` le enseña a escribir.
+//! Dos pasos, como un arquitecto que primero escribe el plano y después un obrero lo ejecuta:
+//!
+//! 1. `lista.rs`: el árbol de cajas → la **display list** (`Vec<Orden>`), qué pintar y en qué
+//!    orden, todavía sin pixeles.
+//! 2. `rasterizar.rs`: `Lienzo::ejecutar` convierte cada orden en pixeles (redondeo y mezcla alfa).
+//!
+//! El `Lienzo` es la lista de pixeles sobre la que se dibuja. `fuente` le enseña a escribir y
+//! `bmp` lo guarda como imagen (`farol --render`).
 
+pub mod bmp;
 pub mod fuente;
+mod lista;
+mod rasterizar;
+
+pub use lista::{Orden, lista_de_pintado};
 
 /// Un color en 32 bits con la forma `0x00RRGGBB`: dos dígitos hexadecimales por canal.
 pub type Color = u32;
