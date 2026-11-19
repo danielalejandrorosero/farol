@@ -1,6 +1,8 @@
 //! Pintado: recibe las cajas y entrega pixeles en el framebuffer. Fases 6 y 7.
 //!
-//! Por ahora solo existe el `Lienzo`: la lista de pixeles sobre la que se dibuja.
+//! El `Lienzo` es la lista de pixeles sobre la que se dibuja. `fuente` le enseña a escribir.
+
+pub mod fuente;
 
 /// Un color en 32 bits con la forma `0x00RRGGBB`: dos dígitos hexadecimales por canal.
 pub type Color = u32;

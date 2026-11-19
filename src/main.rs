@@ -17,12 +17,14 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const USO: &str = "Uso:
   farol                      abre la ventana
-  farol --dom <archivo>      imprime el árbol DOM de una página HTML";
+  farol --dom <archivo>      imprime el árbol DOM de una página HTML
+  farol --fuente             abre la ventana con la demostración de la fuente";
 
 fn main() {
     let argumentos: Vec<String> = std::env::args().skip(1).collect();
     match argumentos.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
-        [] => abrir_ventana(),
+        [] => abrir_ventana(escena_de_prueba),
+        ["--fuente"] => abrir_ventana(pintado::fuente::demostracion::escena),
         ["--dom", ruta] => imprimir_dom(ruta),
         _ => {
             eprintln!("{USO}");
@@ -44,9 +46,9 @@ fn imprimir_dom(ruta: &str) {
     print!("{}", html::parsear(&texto).imprimir());
 }
 
-fn abrir_ventana() {
+fn abrir_ventana(escena: fn(&mut Lienzo)) {
     println!("{NOMBRE} {VERSION}");
-    if let Err(error) = ui::abrir(&format!("{NOMBRE} {VERSION}"), escena_de_prueba) {
+    if let Err(error) = ui::abrir(&format!("{NOMBRE} {VERSION}"), escena) {
         eprintln!("Farol no pudo abrir la ventana: {error}");
         exit(1);
     }

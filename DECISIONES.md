@@ -126,6 +126,12 @@ abrir la ventana. Los contratos entre módulos están en `docs/ARQUITECTURA.md`.
 | 2 | Algoritmo de "adopción" de WHATWG para etiquetas cruzadas (`<b><i></b></i>`) | En `<b>x <i>y</b> z</i>`, la "z" no sale en cursiva; en Chrome sí | Si una página real se ve mal por esto |
 | 2 | No se crean `<html>`, `<head>` y `<body>` cuando faltan | Una página sin esas etiquetas tiene un árbol con otra forma que en Chrome | Fase 4, si los estilos por defecto lo necesitan |
 | 2 | Solo se traducen unas pocas entidades con nombre (`&amp;`, `&lt;`, `&ntilde;`…) más todas las numéricas | `&eacute;` se muestra tal cual | Cuando aparezca en una página de prueba |
+| 7 | Sin suavizado (anti-aliasing): cada pixel está encendido o apagado | Bordes en escalera, más visibles a 24 px o más y en cursiva | Si el texto grande molesta; se puede suavizar al escalar |
+| 7 | Una sola fuente: `font-family` se ignora; serif, sans y monoespaciada se ven iguales | `<code>` y `<pre>` no se ven monoespaciados | Fase 8 o después, si una página lo necesita |
+| 7 | Sin kerning ni ligaduras: el espacio entre letras es siempre 1 columna | Pares como "AV" o "To" quedan algo separados | Si se nota en páginas reales |
+| 7 | La fuente está dibujada para 16 px; otros tamaños se agrandan o achican por vecino más cercano | A 12 px o menos algunas letras se apelmazan (la ñ, la m); a 24 px los trazos tienen 1,5 px y se ven desparejos | Si el texto chico de las páginas cuesta leerse: dibujar una segunda versión para tamaños chicos |
+| 7 | Cobertura: ASCII, español y algunos signos tipográficos; el resto sale como "tofu" (un rectángulo hueco) | Letras como ç, à, ß, € o cualquier alfabeto no latino se ven como rectángulos | Cuando aparezcan en una página de prueba |
+| 7 | Negrita y cursiva son sintéticas (doble trazo, inclinación) | Se ven menos finas que una negrita o cursiva diseñadas | No está previsto |
 
 ## Plantilla
 
