@@ -272,4 +272,23 @@ impl Lienzo { pub fn texto(&mut self, x: f32, y: f32, texto: &str, tam: f32, col
   escribe en el lienzo a cualquier tamaño.
 - `fuente/demostracion.rs`: la escena de `farol --fuente`.
 
+### `ui` y `navegador` (scroll y selección, adelantados de la fase 11)
+```rust
+// ui: la ventana le habla a cualquier cosa que cumpla este contrato.
+pub trait Pagina {
+    fn dibujar(&mut self, lienzo: &mut Lienzo, desplazamiento: f32) -> f32;   // devuelve el alto total
+    fn clic(&mut self, x: f32, y: f32, clics: u32, extender: bool) -> bool;  // coordenadas de página
+    fn arrastrar(&mut self, x: f32, y: f32) -> bool;
+    fn seleccionar_todo(&mut self) -> bool;
+    fn deseleccionar(&mut self) -> bool;
+    fn texto_seleccionado(&self) -> Option<String>;
+    fn hay_texto_en(&self, x: f32, y: f32) -> bool;
+}
+// navegador: VistaPagina implementa Pagina con estilos → layout → pintado + selección.
+```
+- `ui` guarda el scroll (`ui/desplazamiento.rs`), cuenta los clics y habla con el portapapeles.
+- `navegador/seleccion.rs` aplana los fragmentos del layout en una lista; un punto de la
+  selección es (fragmento, letra). Los rectángulos azules se agregan al final de la display list
+  con alfa, para que el texto se vea debajo.
+
 Este documento se actualiza cuando una decisión cambia la forma de un módulo.

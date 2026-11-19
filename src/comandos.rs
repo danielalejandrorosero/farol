@@ -4,7 +4,7 @@
 use std::process::exit;
 
 use crate::pintado::{self, Lienzo};
-use crate::{css, estilo, html, layout, ui};
+use crate::{css, estilo, html, layout, navegador, ui};
 
 /// Alto mínimo de la imagen de `--render` cuando la página mide menos (o nada).
 const ALTO_MINIMO_RENDER: usize = 100;
@@ -84,12 +84,10 @@ pub fn abrir_pagina(ruta: &str, titulo_programa: &str) {
     let nombre = std::path::Path::new(ruta).file_name().map(|n| n.to_string_lossy().into_owned());
     let titulo = doc.titulo().or(nombre).unwrap_or_else(|| ruta.to_string());
 
-    // `move` mete `estilado` dentro del cierre: desde ahora vive allí, junto a la ventana.
-    let dibujar = move |lienzo: &mut Lienzo| {
-        let cajas = layout::calcular(&estilado, lienzo.ancho() as f32);
-        lienzo.ejecutar(&pintado::lista_de_pintado(&cajas));
-    };
-    if let Err(error) = ui::abrir(&format!("{titulo} — {titulo_programa}"), dibujar) {
+    // La vista se queda con el árbol estilado y con la selección; la ventana le pide que se
+    // pinte y le avisa del mouse y el teclado.
+    let vista = navegador::VistaPagina::nueva(estilado);
+    if let Err(error) = ui::abrir(&format!("{titulo} — {titulo_programa}"), vista) {
         eprintln!("Farol no pudo abrir la ventana: {error}");
         exit(1);
     }

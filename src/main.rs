@@ -5,6 +5,7 @@ mod css;
 mod estilo;
 mod html;
 mod layout;
+mod navegador;
 mod pintado;
 mod red;
 mod ui;

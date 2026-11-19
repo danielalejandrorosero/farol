@@ -15,7 +15,7 @@ Fase actual: **9** (las fases 3 a 8 se construyeron con agentes el 2026-11-18)
 | 8 | Layout en línea | Cerrada | Un artículo se lee bien y se reacomoda al redimensionar |
 | 9 | Redes: URL, DNS, TCP, HTTP | Pendiente | Carga `http://example.com` y `http://info.cern.ch`; captura de Wireshark |
 | 10 | Recursos e imágenes | Pendiente | Página con CSS externo e imágenes completa |
-| 11 | Interacción | Pendiente | Dirección, clic en enlace, atrás, scroll |
+| 11 | Interacción | Parcial: scroll, selección y copiar adelantados | Dirección, clic en enlace, atrás, scroll |
 | 12 | HTTPS | Pendiente | Carga una página HTTPS real |
 
 ## Fase 0: lista de cierre

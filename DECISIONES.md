@@ -27,6 +27,8 @@ la confirme) · **Pendiente**.
 | 6.2 | Cómo se ve el resultado sin abrir la ventana | `farol --render` escribe un BMP con un escritor propio | Decidida (delegada a Claude) | 2026-11-18 |
 | 7.1 | De dónde salen las letras | Fuente de mapa de bits propia, escalable | Decidida (delegada a Claude) | 2026-11-18 |
 | 8.1 | Cómo se parten las líneas | Voraz | Decidida (delegada a Claude) | 2026-11-18 |
+| 11.a | Adelantar el scroll de la fase 11 | Sí, a pedido del arquitecto: rueda, flechas, AvPág/RePág, Espacio, Inicio/Fin y barra | Decidida | 2026-11-18 |
+| 11.b | Selección de texto y copiar | Arrastre, doble clic (palabra), Shift+clic, Ctrl+A, Escape; Ctrl+C al portapapeles de Windows con FFI propio, sin crates | Decidida (pedida por el arquitecto; implementación elegida por Claude) | 2026-11-18 |
 | 9.1 | Resolución DNS | Cliente DNS propio sobre UDP | Decidida | 2026-11-18 |
 | 9.4 | Inspección de tráfico | Wireshark, con captura guardada como evidencia del hito | Decidida | 2026-11-18 |
 | 12.1 | HTTPS | Ambos: librería TLS por defecto y TLS 1.3 propio experimental | Decidida | 2026-11-18 |
@@ -102,6 +104,15 @@ colapso de márgenes, colores opacos con alfa simple, fuente de mapa de bits pro
 líneas voraz. Se agregó 6.2 (render a BMP) para que los agentes puedan verificar visualmente sin
 abrir la ventana. Los contratos entre módulos están en `docs/ARQUITECTURA.md`.
 
+### 11.a y 11.b — Scroll y selección, adelantados
+- **Origen:** al abrir el artículo, el arquitecto notó que no había scroll y pidió además poder
+  seleccionar con el resaltado azul (arrastre, doble clic, Ctrl+A) y copiar.
+- **Organización:** `ui` define el contrato `Pagina` (pintar y recibir mouse/teclado en
+  coordenadas de página) y no sabe qué es una página. El módulo nuevo `navegador` implementa ese
+  contrato: une la tubería con la selección, como el controlador de un MVC.
+- **Portapapeles:** API de Windows (`OpenClipboard`, `SetClipboardData`…) declarada a mano en
+  `src/ui/portapapeles.rs`. No entra ningún crate (0.2).
+
 ### 9.1 — Cliente DNS propio
 - **Opciones:** resolvedor del sistema operativo o cliente propio sobre UDP.
 - **Motivo:** el arquitecto quiere ver las redes por dentro; el paquete se arma byte a byte.
@@ -165,6 +176,11 @@ abrir la ventana. Los contratos entre módulos están en `docs/ARQUITECTURA.md`.
 | 8 | El subrayado es una raya de `tam/16` px un cuadrito debajo de la línea base, de punta a punta del fragmento; no salta los descendentes (`text-decoration-skip-ink`) e incluye la columna vacía después de la última letra | La raya cruza la cola de la g y la p, y se pasa 1 px a la derecha | Si molesta al leer |
 | 8 | El texto ignora la transparencia de su color (`rgba` se pinta opaco), `letter-spacing`, `word-spacing`, `text-indent`, `text-transform` y la dirección derecha-a-izquierda | Esas propiedades no tienen efecto | Cuando una página de prueba las use |
 | 8 | `inline-block` se trata como en línea: su `width`, `height` y márgenes verticales se ignoran | Un botón con `display: inline-block; width: 120px` mide lo que mida su texto | Cuando una página use `inline-block` (común en menús y botones) |
+| 11 | Al cambiar el ancho de la ventana se borra la selección (los fragmentos se mueven) | Redimensionar quita el resaltado | Fase 11 |
+| 11 | Arrastrar fuera de la ventana no hace scroll solo; la barra no se puede arrastrar con el mouse | Para seleccionar más de una pantalla hay que usar la rueda mientras se arrastra | Fase 11 |
+| 11 | Sin triple clic (renglón o párrafo) | Solo palabra con doble clic | Si se extraña |
+| 11 | El portapapeles solo funciona en Windows | En Linux o macOS Ctrl+C avisa que no está implementado | Si Farol se compila en otro sistema |
+| 11 | Cada movimiento del mouse con el botón apretado rehace el layout completo al repintar | Ninguno visible en páginas chicas | Si se siente lento |
 
 ## Plantilla
 
