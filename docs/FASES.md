@@ -1,6 +1,6 @@
 # Estado de las fases
 
-Fase actual: **8**
+Fase actual: **9** (las fases 3 a 8 se construyeron con agentes el 2026-11-18)
 
 | Fase | Nombre | Estado | Hito |
 |---|---|---|---|
