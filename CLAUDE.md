@@ -45,6 +45,10 @@ El usuario no escribe código, pero quiere entender lo que se construye. En cada
    microservicios, Redis, servidores, Linux). No conoce Rust ni arquitectura de software de
    sistemas. Explicar lo nuevo con analogías a lo que ya sabe y definir cada término de Rust la
    primera vez que aparezca.
+7. **Aterrizar en lo físico.** Al usuario le encantan las explicaciones que bajan a lo que pasa de
+   verdad en el mundo: "mira tu monitor con una lupa: cada pixel son tres lucecitas", "tu retina
+   tiene tres tipos de células". Empezar por esa imagen concreta (luces, cables, voltajes,
+   paquetes viajando, bytes en memoria) en frases cortas, y solo después conectarla con el código.
 
 ## Documentos
 
