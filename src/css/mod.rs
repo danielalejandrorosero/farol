@@ -26,8 +26,6 @@ mod valores;
 pub use tipos::{Color, Declaracion, HojaDeEstilos, Regla, Selector, SelectorSimple, Unidad, Valor};
 
 /// Convierte el texto de una hoja de estilos en sus reglas.
-// Lo usará el motor de estilos (fase 4) para leer los <style> y la hoja por defecto.
-#[allow(dead_code)]
 pub fn parsear(css: &str) -> HojaDeEstilos {
     parsear_con_avisos(css).0
 }
@@ -39,8 +37,6 @@ pub fn parsear_con_avisos(css: &str) -> (HojaDeEstilos, Vec<String>) {
 }
 
 /// Las declaraciones del atributo `style=""`: lo mismo que va entre llaves, sin selector.
-// Lo usará el motor de estilos (fase 4) con el atributo style de cada elemento.
-#[allow(dead_code)]
 pub fn parsear_declaraciones(texto: &str) -> Vec<Declaracion> {
     parser::parsear_lista_declaraciones(&tokenizador::tokenizar(texto), &mut Vec::new())
 }

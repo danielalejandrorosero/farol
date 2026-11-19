@@ -44,6 +44,16 @@ URL → red → bytes → parsers → estilos → layout → display list → pi
 - `abreviadas.rs`: expande `margin`, `padding`, `border*` y `background`.
 - `tipos.rs`: los tipos del contrato.
 
+## Por dentro de `estilo`
+
+- `por_defecto.css`: la hoja del navegador (lo que hace grande a un `h1` sin CSS del autor).
+- `emparejar.rs`: ¿este selector le aplica a este elemento? Ingenuo (decisión 4.1), de derecha a
+  izquierda, subiendo por `Nodo::padre` para el combinador descendiente.
+- `cascada.rs`: junta las declaraciones que le aplican a un elemento y las ordena por
+  (importante, origen, especificidad, orden). Guarda todas las candidatas, no solo la ganadora.
+- `computar.rs`: convierte lo que ganó en valores finales, con herencia, `em`, `currentcolor`.
+- `tipos.rs`: los tipos del contrato. `imprimir.rs`: el texto de `farol --estilo`.
+
 ## Contratos entre módulos (fases 3 a 8)
 
 Escritos antes de construir, para que cada fase encaje con las demás. Los nombres pueden
@@ -105,6 +115,20 @@ pub struct NodoEstilado { pub nodo: NodoId, pub texto: Option<String>, pub estil
 pub fn hojas_del_documento(doc: &Documento) -> Vec<HojaDeEstilos>   // contenido de los <style>
 pub fn estilar(doc: &Documento, hojas_autor: &[HojaDeEstilos]) -> NodoEstilado
 ```
+- Implementado así en la fase 4. Agregados al contrato: `Lados::todos/en_orden/desde_orden`,
+  `Estilo::inicial()`, `Estilo::para_texto(&padre)`, `NodoEstilado::imprimir(&doc)` y
+  `estilo::explicar(doc, hojas, selector)` (lo que usa `--estilo <html> <selector>`).
+- La raíz (`NodoEstilado` del nodo `Documento`) tiene el estilo inicial con `display: Bloque`.
+- Los nodos de texto llevan `texto: Some(..)`, `display: EnLinea`, las propiedades heredables del
+  padre y el resto en su valor inicial (sin márgenes, relleno, bordes ni fondo). Los textos de solo
+  espacios se conservan: los colapsa la fase 8.
+- `ancho_maximo: Auto` significa `max-width: none`.
+- `alto_linea` ya está en px. `line-height: 1.5` se hereda como factor (cada hijo multiplica por
+  su propia letra); `line-height: 24px` o `1.5em` se heredan como px fijos. `normal` = 1.2.
+- `subrayado` incluye el de los ancestros (en CSS la decoración se propaga y no se puede quitar).
+- `display` se reduce a tres valores: `flex`, `grid`, `list-item` y las partes de tabla se
+  tratan como `Bloque`; `inline-block` como `EnLinea`. Un valor que no se entiende se ignora y
+  vale la siguiente declaración de la cascada.
 - Hoja por defecto del navegador en `src/estilo/por_defecto.css`, cargada con `include_str!`.
 - `em` se resuelve a px aquí. Los `%` se quedan como `Porcentaje` para que los resuelva el layout.
 - Un borde sin `border-style` (o `none`) tiene ancho 0, como en CSS.
@@ -135,7 +159,7 @@ impl Lienzo { pub fn texto(&mut self, x: f32, y: f32, texto: &str, tam: f32, col
   mezcla alfa) se hace en `pintado`.
 
 ### Línea de comandos
-- `farol --dom <html>` (fase 2), `farol --css <css>` (3), `farol --estilo <html>` (4),
+- `farol --dom <html>` (fase 2), `farol --css <css>` (3), `farol --estilo <html> [selector]` (4),
   `farol --layout <html> [ancho]` (5), `farol --render <html> <salida.bmp> [ancho alto]` (6),
   `farol <html>` abre la página en la ventana (6).
 

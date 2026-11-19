@@ -20,8 +20,7 @@ pub enum TipoNodo {
 #[derive(Debug)]
 pub struct Nodo {
     pub tipo: TipoNodo,
-    // Lo usará el motor de estilos (fase 4) para heredar propiedades del padre.
-    #[allow(dead_code)]
+    /// Lo usa el motor de estilos para leer selectores con descendientes (`nav a`).
     pub padre: Option<NodoId>,
     pub hijos: Vec<NodoId>,
 }

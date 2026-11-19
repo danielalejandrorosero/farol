@@ -132,6 +132,14 @@ abrir la ventana. Los contratos entre módulos están en `docs/ARQUITECTURA.md`.
 | 3 | `background` solo conserva el color; imágenes, posiciones y varias capas se ignoran | Sin imágenes de fondo | Fase 10 (imágenes) |
 | 3 | Sin `@media`, `@import`, `@font-face` ni selectores `>`, `+`, `~`, `:pseudo`, `[atributo]` (decisión 3.1) | Esas reglas no se aplican | Si una página real se ve mal por esto |
 | 3 | Sin `var()` ni propiedades personalizadas, `calc()`, `hsl()` ni la lista completa de 148 nombres de color | Esos valores se descartan o quedan como texto | Cuando una página de prueba los use |
+| 4 | `display` solo distingue bloque, en línea y ninguno: `flex`, `grid`, `list-item` y tablas se tratan como bloque; `inline-block` como en línea | Un `display: flex` apila los hijos uno debajo de otro; las tablas salen como bloques apilados; los `<li>` sin viñeta | Cuando una página de prueba use flex o tablas |
+| 4 | Solo dos pesos de letra (≥ 600 es negrita); `bolder` siempre da negrita y `lighter` siempre normal | `font-weight: 500` se ve normal; `300` también | Fase 7, si la fuente tiene más pesos |
+| 4 | `text-align: justify` se trata como izquierda | Texto justificado sale alineado a la izquierda | Fase 8 |
+| 4 | El estilo del borde solo dice si se ve o no; `dashed`, `dotted`, `double`, `inset`… se dibujarán sólidos | Bordes punteados salen continuos | Fase 6, si hace falta |
+| 4 | `text-decoration` solo entiende `underline`; `line-through` y `overline` se ignoran | `<del>` y `<s>` salen sin tachar | Cuando una página de prueba lo use |
+| 4 | Sin `:link` ni `[hidden]` en la hoja por defecto (no hay esos selectores): todo `<a>` es azul y subrayado, tenga o no `href`; `<p hidden>` se ve | Un `<a name="x">` sale azul | Si una página real se ve mal por esto |
+| 4 | `line-height: normal` es siempre 1.2 × el tamaño de letra, sin mirar la fuente | Diferencias de 1 o 2 px por línea con Chrome | Fase 7 |
+| 4 | Sin `font-family` ni `white-space`: `pre` y `code` no usan letra monoespaciada ni respetan saltos de línea | Un `<pre>` se ve como un párrafo | Fase 8 (`white-space`) |
 
 ## Plantilla
 

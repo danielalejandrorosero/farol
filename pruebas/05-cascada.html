@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Prueba 05: la cascada</title>
+  <style>
+    /* Herencia: el color y la letra del body bajan a todos sus descendientes. */
+    body { color: #333333; font-size: 18px; line-height: 1.5; }
+
+    /* Especificidad: el id (1,0,0) le gana a la clase (0,1,0) y a la etiqueta (0,0,1),
+       aunque aparezcan después. */
+    #especifico { color: red; }
+    .nota { color: blue; }
+    p { color: green; }
+
+    /* Orden: a igual especificidad (0,1,0), gana la última. */
+    .primera { background-color: #ffeeee; }
+    .segunda { background-color: #eeffee; }
+
+    /* !important le gana a todo, incluso al atributo style="". */
+    .urgente { color: purple !important; }
+
+    /* Clases múltiples: .boton.grande (0,2,0) le gana a .boton (0,1,0). */
+    .boton { padding: 4px 8px; border: 1px solid; font-size: 14px; }
+    .boton.grande { font-size: 1.5em; padding: 0.5em 1em; }
+
+    /* Descendiente: solo los enlaces dentro de nav. */
+    nav a { color: white; text-decoration: none; }
+    nav { background-color: #0f6e6e; padding: 10px; }
+
+    /* em anidados: cada nivel es 1.2 veces su padre. */
+    .anidado { font-size: 1.2em; margin-left: 1em; border-left: 3px solid #0f6e6e; }
+
+    /* display: none hace desaparecer el aside y todo lo que tenga adentro. */
+    aside { display: none; }
+
+    /* Un valor que Farol no entiende se ignora: el div sigue siendo bloque. */
+    .raro { display: banana; width: 50%; max-width: 400px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <nav><a href="#">Inicio</a> <a href="#">Acerca</a></nav>
+
+  <h1>La cascada</h1>
+  <p id="especifico" class="nota">Rojo: el id gana a la clase y a la etiqueta.</p>
+  <p class="nota">Azul: la clase gana a la etiqueta.</p>
+  <p>Verde: solo la etiqueta.</p>
+  <p class="primera segunda">Fondo verde claro: a igual especificidad, gana la última regla.</p>
+  <p class="urgente" style="color: orange">Morado: !important le gana al style="".</p>
+  <p style="color: orange">Naranja: style="" le gana a la etiqueta p.</p>
+
+  <p>Un <span class="boton">botón</span> y un <span class="boton grande">botón grande</span>.
+     El texto de los enlaces fuera de nav es <a href="#">azul y subrayado</a>.</p>
+
+  <div class="anidado">18 × 1.2 = 21.6px
+    <div class="anidado">21.6 × 1.2 = 25.92px
+      <div class="anidado">25.92 × 1.2 = 31.1px</div>
+    </div>
+  </div>
+
+  <aside><p>Esto no se ve.</p></aside>
+  <div class="raro">Centrado con margen auto.</div>
+</body>
+</html>

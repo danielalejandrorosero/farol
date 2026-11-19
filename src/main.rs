@@ -18,7 +18,10 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const USO: &str = "Uso:
   farol                      abre la ventana
   farol --dom <archivo>      imprime el árbol DOM de una página HTML
-  farol --css <archivo>      imprime las reglas de una hoja de estilos CSS";
+  farol --css <archivo>      imprime las reglas de una hoja de estilos CSS
+  farol --estilo <archivo> [selector]
+                             imprime el árbol estilado de una página HTML; con un selector,
+                             qué declaraciones pelean en cada elemento y cuál gana";
 
 fn main() {
     let argumentos: Vec<String> = std::env::args().skip(1).collect();
@@ -26,6 +29,7 @@ fn main() {
         [] => abrir_ventana(),
         ["--dom", ruta] => imprimir_dom(ruta),
         ["--css", ruta] => imprimir_css(ruta),
+        ["--estilo", ruta, resto @ ..] if resto.len() <= 1 => imprimir_estilo(ruta, resto.first()),
         _ => {
             eprintln!("{USO}");
             exit(2);
@@ -64,6 +68,30 @@ fn imprimir_css(ruta: &str) {
 Descartado ({}):", avisos.len());
         for aviso in avisos {
             println!("  - {aviso}");
+        }
+    }
+}
+
+fn imprimir_estilo(ruta: &str, selector: Option<&&str>) {
+    let bytes = match std::fs::read(ruta) {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            eprintln!("No se pudo leer {ruta}: {error}");
+            exit(1);
+        }
+    };
+    let doc = html::parsear(&String::from_utf8_lossy(&bytes));
+    let hojas = estilo::hojas_del_documento(&doc);
+    let Some(selector) = selector else {
+        print!("{}", estilo::estilar(&doc, &hojas).imprimir(&doc));
+        return;
+    };
+    // El selector se lee con el mismo parser de CSS, como si fuera el comienzo de una regla.
+    match css::parsear(&format!("{selector} {{}}")).reglas.first().map(|r| &r.selectores[..]) {
+        Some([selector]) => print!("{}", estilo::explicar(&doc, &hojas, selector)),
+        _ => {
+            eprintln!("No se entiende el selector `{selector}` (se acepta uno solo, sin comas).");
+            exit(2);
         }
     }
 }

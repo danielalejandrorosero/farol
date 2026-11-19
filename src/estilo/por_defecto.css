@@ -1,0 +1,51 @@
+/* Hoja de estilos del navegador (origen "navegador" en la cascada).
+ *
+ * Es lo que hace que un <h1> sea grande y un <a> azul en una página sin CSS. Cualquier regla
+ * del autor le gana, aunque sea menos específica. Los valores copian los de Chrome.
+ * Todo elemento que no aparece aquí es `display: inline`, el valor inicial de CSS.
+ */
+
+html, body, div, p, address, blockquote, center, figure, figcaption, form, fieldset, legend,
+header, footer, main, section, article, nav, aside, hgroup, details, summary, dialog,
+h1, h2, h3, h4, h5, h6, ul, ol, li, menu, dir, dl, dt, dd, pre, hr, noscript,
+table, caption, thead, tbody, tfoot, tr, td, th {
+  display: block;
+}
+
+head, style, script, title, meta, link, base, template, datalist, area, param {
+  display: none;
+}
+
+body { margin: 8px; }
+
+p, dl, pre { margin: 1em 0; }
+blockquote, figure { margin: 1em 40px; }
+dd { margin-left: 40px; }
+center { text-align: center; }
+
+/* Los márgenes van en em: se miden con el tamaño de letra del propio título. */
+h1 { font-size: 2em;    margin: 0.67em 0; }
+h2 { font-size: 1.5em;  margin: 0.83em 0; }
+h3 { font-size: 1.17em; margin: 1em 0; }
+h4 {                    margin: 1.33em 0; }
+h5 { font-size: 0.83em; margin: 1.67em 0; }
+h6 { font-size: 0.67em; margin: 2.33em 0; }
+h1, h2, h3, h4, h5, h6, b, strong, th { font-weight: bold; }
+
+i, em, cite, var, dfn, address { font-style: italic; }
+u, ins { text-decoration: underline; }
+small, sub, sup { font-size: smaller; }
+big { font-size: larger; }
+mark { background-color: yellow; color: black; }
+
+a { color: #0000ee; text-decoration: underline; }
+
+ul, ol, menu, dir { margin: 1em 0; padding-left: 40px; }
+/* Una lista dentro de otra no deja espacio arriba ni abajo. */
+ul ul, ul ol, ol ul, ol ol { margin-top: 0; margin-bottom: 0; }
+
+hr { color: gray; border: 1px inset; margin: 0.5em auto; }
+
+fieldset { margin: 0 2px; padding: 0.35em 0.75em 0.625em; border: 2px groove #c0c0c0; }
+td, th { padding: 1px; }
+th { text-align: center; }
